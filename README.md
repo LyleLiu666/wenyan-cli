@@ -2,13 +2,12 @@
     <img alt = "logo" src="https://raw.githubusercontent.com/caol64/wenyan/main/Data/256-mac.png" />
 </div>
 
-# 文颜 CLI
+# 文颜 CLI (魔改版)
 
-[![npm](https://img.shields.io/npm/v/@wenyan-md/cli)](https://www.npmjs.com/package/@wenyan-md/cli)
-[![License](https://img.shields.io/github/license/caol64/wenyan-cli)](LICENSE)
-![NPM Downloads](https://img.shields.io/npm/dm/%40wenyan-md%2Fcli)
-[![Docker Pulls](https://img.shields.io/docker/pulls/caol64/wenyan-cli)](https://hub.docker.com/r/caol64/wenyan-cli)
-[![Stars](https://img.shields.io/github/stars/caol64/wenyan-cli?style=social)](https://github.com/caol64/wenyan-cli)
+[![License](https://img.shields.io/github/license/LyleLiu666/wenyan-cli)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/LyleLiu666/wenyan-cli?style=social)](https://github.com/LyleLiu666/wenyan-cli)
+
+> 基于 [caol64/wenyan-cli](https://github.com/caol64/wenyan-cli) 的个人魔改版本
 
 ## 简介
 
@@ -21,23 +20,28 @@
 
 文颜的目标是：**让写作者专注内容，而不是排版和平台适配**。
 
-## 文颜的不同版本
+## 魔改说明
 
-文颜目前提供多种形态，覆盖不同使用场景：
+本仓库是在原版基础上的个人定制版本，可能包含实验性功能和未合并到上游的修改。
 
--   [macOS App Store 版](https://github.com/caol64/wenyan) - MAC 桌面应用
--   [跨平台桌面版](https://github.com/caol64/wenyan-pc) - Windows/Linux
--   👉[CLI 版本](https://github.com/caol64/wenyan-cli) - 本项目
--   [MCP 版本](https://github.com/caol64/wenyan-mcp) - AI 自动发文
--   [UI 库](https://github.com/caol64/wenyan-ui) - 桌面应用和 Web App 共用的 UI 层封装
--   [核心库](https://github.com/caol64/wenyan-core) - 嵌入 Node / Web 项目
+- 原版项目：[caol64/wenyan-cli](https://github.com/caol64/wenyan-cli)
+- 如需稳定版本，请使用官方 npm 包：`@wenyan-md/cli`
 
 ## 安装方式
 
-### 方式一：npm（推荐）
+### 方式一：本地安装（推荐）
 
 ```bash
-npm install -g @wenyan-md/cli
+# 克隆仓库
+git clone https://github.com/LyleLiu666/wenyan-cli.git
+cd wenyan-cli
+
+# 安装依赖
+npm install
+
+# 构建并链接
+npm run build
+npm link
 ```
 
 安装完成后即可使用：
@@ -46,38 +50,13 @@ npm install -g @wenyan-md/cli
 wenyan --help
 ```
 
-### 方式二：Docker（无需 Node 环境）
+### 方式二：使用官方 npm 包
 
-如果你不想在本地安装 Node.js，也可以直接使用 Docker。
-
-**拉取镜像**
+如需稳定版本，请使用官方发布的 npm 包：
 
 ```bash
-docker pull caol64/wenyan-cli
+npm install -g @wenyan-md/cli
 ```
-
-**查看帮助**
-
-```bash
-docker run --rm caol64/wenyan-cli
-```
-
-**发布文章示例**
-
-```bash
-docker run --rm \
-  --env-file .env.test \
-  -e HOST_FILE_PATH=$(pwd) \
-  -v $(pwd):/mnt/host-downloads \
-  caol64/wenyan-cli \
-  publish -f ./test/publish.md -t phycat
-```
-
-> 说明：
->
-> -   使用 `-e` 传入环境变量
-> -   使用 `-v` 挂载本地 Markdown 文件
-> -   容器启动即执行 `wenyan` 命令
 
 ## 基本用法
 

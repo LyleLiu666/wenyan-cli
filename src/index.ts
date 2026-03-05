@@ -72,6 +72,17 @@ export function createProgram(version: string = pkg.version): Command {
         .action(themeCommand);
 
     program
+        .command("broadcast")
+        .description("Broadcast a published article to all WeChat followers")
+        .requiredOption("-m, --media-id <id>", "Media ID of the article to broadcast")
+        .action(async (options: { mediaId: string }) => {
+            await runCommandWrapper(async () => {
+                const { broadcastCommand } = await import("./commands/broadcast.js");
+                await broadcastCommand(options);
+            });
+        });
+
+    program
         .command("serve")
         .description("Start a server to provide HTTP API for rendering and publishing")
         .option("-p, --port <port>", "Port to listen on (default: 3000)", "3000")
