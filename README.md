@@ -130,6 +130,26 @@ wenyan publish -f "./example.md" -t lapis --server https://localhost:3000 --api-
 
 ---
 
+### `broadcast`
+
+将已上传到公众号草稿箱的文章群发给所有粉丝。
+
+#### 参数
+
+- `-m, --media-id <id>`：要群发文章的 media_id（从 `publish` 命令的输出中获取）
+
+#### 使用示例
+
+```bash
+# 群发文章
+wenyan broadcast -m "3oNlDjg8x5-y_zq1H3w5mKpMxGg8h0wQmFp4Ca1XhUk"
+```
+
+> [!WARNING]
+> 群发有频率限制：订阅号每天 1 次，服务号每月 4 次。
+
+---
+
 ### `theme`
 
 主题管理，浏览内置主题、添加/删除自定义主题。
