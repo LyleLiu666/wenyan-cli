@@ -1,16 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createProgram } from "../src/index.js";
 import { publishCommand } from "../src/commands/publish.js";
-import { prepareRenderContext } from "../src/commands/render.js";
+import { renderCommand } from "../src/commands/render.js";
 
 vi.mock("../src/commands/publish.js", () => ({
-    publishCommand: vi.fn(),
+    publishCommand: vi.fn().mockResolvedValue({
+        ok: true,
+        command: "publish",
+        media_id: "mock_media_123",
+    }),
 }));
 
 vi.mock("../src/commands/render.js", () => ({
-    prepareRenderContext: vi.fn().mockResolvedValue({
-        gzhContent: { content: "<h1>Hello</h1>" },
-        absoluteDirPath: "/mock/path",
+    renderCommand: vi.fn().mockResolvedValue({
+        ok: true,
+        command: "render",
+        html: "<h1>Hello</h1>",
     }),
 }));
 
@@ -31,6 +36,7 @@ describe("CLI Argument Parsing", () => {
     it("should call publish command with correct options", async () => {
         // 模拟命令行输入: wenyan publish -f test.md -t rainbow --no-mac-style
         const args = ["node", "wenyan", "publish", "-f", "test.md", "-t", "rainbow", "--no-mac-style"];
+        const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
         await program.parseAsync(args);
 
@@ -48,22 +54,39 @@ describe("CLI Argument Parsing", () => {
         });
 
         expect(publishCommand).toHaveBeenCalledWith(undefined, expectedOptions);
+        expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('"media_id":"mock_media_123"'));
     });
 
     it("should call render command with string input", async () => {
         // 模拟命令行输入: wenyan render "# Hello"
         const args = ["node", "wenyan", "render", "# Hello"];
+        const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
         await program.parseAsync(args);
 
-        expect(prepareRenderContext).toHaveBeenCalledTimes(1);
+        expect(renderCommand).toHaveBeenCalledTimes(1);
         const expectedOptions = expect.objectContaining({
             footnote: true,
             theme: "default",
             macStyle: true,
             highlight: "solarized-light",
         });
-        expect(prepareRenderContext).toHaveBeenCalledWith("# Hello", expectedOptions);
+        expect(renderCommand).toHaveBeenCalledWith("# Hello", expectedOptions);
+        expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('"command":"render"'));
+    });
+
+    it("should pass preflight option to publish command", async () => {
+        const args = ["node", "wenyan", "publish", "-f", "test.md", "--preflight"];
+
+        await program.parseAsync(args);
+
+        expect(publishCommand).toHaveBeenCalledWith(
+            undefined,
+            expect.objectContaining({
+                file: "test.md",
+                preflight: true,
+            }),
+        );
     });
 
     it("should display help when no command is provided", async () => {

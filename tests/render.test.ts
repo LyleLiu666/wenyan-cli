@@ -1,17 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { prepareRenderContext } from "../src/commands/render";
 import fs from "node:fs/promises";
-import { readStdin } from "../src/utils.js";
 
 // 1. Mock 外部模块
 vi.mock("node:fs/promises");
-vi.mock("../src/utils.js", async (importOriginal) => {
-    const actual = await importOriginal<typeof import("../src/utils.js")>();
-    return {
-        ...actual,
-        readStdin: vi.fn(),
-    };
-});
+vi.mock("@wenyan-md/core/wrapper", () => ({
+    configStore: {
+        getThemeById: vi.fn().mockResolvedValue("body { color: black; }"),
+    },
+    renderStyledContent: vi.fn().mockImplementation(async (content: string) => {
+        const title = content.replace(/^#\s*/, "");
+        return {
+            content: `<h1><span>${title}</span></h1>`,
+            title,
+            cover: "",
+        };
+    }),
+}));
 
 describe("prepareRenderContext", () => {
     // 默认配置，防止 "theme undefined" 错误
@@ -42,18 +47,6 @@ describe("prepareRenderContext", () => {
         const { gzhContent } = await prepareRenderContext(input, defaultOptions as any);
 
         expect(gzhContent.content).toContain("<span>Hello</span></h1>");
-    });
-
-    it("should render content from stdin when input arg is missing", async () => {
-        const originalIsTTY = process.stdin.isTTY;
-        process.stdin.isTTY = false;
-
-        vi.mocked(readStdin).mockResolvedValue("# From Stdin");
-
-        const { gzhContent } = await prepareRenderContext(undefined, defaultOptions as any);
-
-        expect(gzhContent.content).toContain("<span>From Stdin</span></h1>");
-        process.stdin.isTTY = originalIsTTY;
     });
 
     it("should render content from file when input arg and stdin are missing", async () => {

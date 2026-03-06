@@ -3,17 +3,20 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import { FormData, File } from "formdata-node";
 import { FormDataEncoder } from "form-data-encoder";
-import { PublishOptions } from "../types.js";
+import { AppError, PublishOptions } from "../types.js";
+import { collectPublishMetadata } from "../publish-metadata.js";
 import { extractImageUrls, getInputContent } from "../utils.js";
+import { renderContent } from "./render.js";
 
-export async function publishClient(inputContent: string | undefined, options: PublishOptions): Promise<string> {
+const logInfo = (message: string) => {
+    console.error(message);
+};
+
+export async function publishClient(inputContent: string | undefined, options: PublishOptions) {
     const { theme, customTheme, highlight, macStyle, footnote, apiKey } = options;
     const serverUrl = options.server!.replace(/\/$/, ""); // 移除末尾的斜杠
 
-    // ==========================================
-    // 0. 连通性测试 (Health Check)
-    // ==========================================
-    console.log(`[Client] Checking server connection at ${serverUrl} ...`);
+    logInfo(`[Client] Checking server connection at ${serverUrl} ...`);
     try {
         const healthRes = await fetch(`${serverUrl}/health`, {
             method: "GET",
@@ -29,15 +32,20 @@ export async function publishClient(inputContent: string | undefined, options: P
             throw new Error(`Invalid server response. Make sure the server URL is correct.`);
         }
 
-        console.log(`[Client] Server connected successfully (version: ${healthData.version})`);
+        logInfo(`[Client] Server connected successfully (version: ${healthData.version})`);
     } catch (error: any) {
-        throw new Error(
-            `Failed to connect to server (${serverUrl}). \nPlease check if the server is running and the network is accessible. \nDetails: ${error.message}`,
+        throw new AppError(
+            `Failed to connect to server (${serverUrl}). Please check if the server is running and the network is accessible. Details: ${error.message}`,
+            "NETWORK_ERROR",
+            { server: serverUrl },
+            4,
         );
     }
 
     // 统一处理内容和文件所在绝对路径
-    const { content, absoluteDirPath } = await getInputContent(inputContent, options);
+    const { content, absoluteDirPath, inputSource } = await getInputContent(inputContent, options);
+    const gzhContent = await renderContent(content, options);
+    const metadata = collectPublishMetadata(gzhContent, inputSource);
 
     const headers: Record<string, string> = {};
 
@@ -47,9 +55,21 @@ export async function publishClient(inputContent: string | undefined, options: P
 
     let modifiedContent = content;
 
-    // ==========================================
-    // 1. 解析 content 中的所有图片链接并上传
-    // ==========================================
+    if (options.preflight) {
+        return {
+            ok: true as const,
+            command: "publish" as const,
+            preflight: true as const,
+            can_publish: true as const,
+            title: metadata.title,
+            input_source: metadata.inputSource,
+            cover_source: metadata.coverSource,
+            resolved_cover: metadata.resolvedCover,
+            image_count: metadata.imageCount,
+            server: serverUrl,
+        };
+    }
+
     const urlsToProcess = extractImageUrls(content);
 
     // 遍历去重后的图片地址
@@ -88,7 +108,7 @@ export async function publishClient(inputContent: string | undefined, options: P
                 form.append("file", new File([fileBuffer], filename, { type }));
                 const encoder = new FormDataEncoder(form);
 
-                console.log(`[Client] Uploading local image: ${filename} ...`);
+                logInfo(`[Client] Uploading local image: ${filename} ...`);
 
                 const uploadRes = await fetch(`${serverUrl}/upload`, {
                     method: "POST",
@@ -128,7 +148,7 @@ export async function publishClient(inputContent: string | undefined, options: P
     mdForm.append("file", new File([Buffer.from(modifiedContent, "utf-8")], mdFilename, { type: "text/markdown" }));
 
     const mdEncoder = new FormDataEncoder(mdForm);
-    console.log(`[Client] Uploading compiled markdown document ...`);
+    logInfo(`[Client] Uploading compiled markdown document ...`);
 
     const mdUploadRes = await fetch(`${serverUrl}/upload`, {
         method: "POST",
@@ -144,12 +164,9 @@ export async function publishClient(inputContent: string | undefined, options: P
     }
 
     const mdFileId = mdUploadData.data.fileId;
-    console.log(`[Client] Document uploaded, ID: ${mdFileId}`);
+    logInfo(`[Client] Document uploaded, ID: ${mdFileId}`);
 
-    // ==========================================
-    // 3. 调用 /publish 接口，触发 Server 端发布
-    // ==========================================
-    console.log(`[Client] Requesting remote Server to publish ...`);
+    logInfo(`[Client] Requesting remote Server to publish ...`);
 
     const publishRes = await fetch(`${serverUrl}/publish`, {
         method: "POST",
@@ -170,8 +187,23 @@ export async function publishClient(inputContent: string | undefined, options: P
     const publishData: any = await publishRes.json();
 
     if (!publishRes.ok || publishData.code === -1) {
-        throw new Error(`Remote Publish Failed: ${publishData.desc || publishRes.statusText}`);
+        throw new AppError(
+            `Remote Publish Failed: ${publishData.desc || publishRes.statusText}`,
+            "PUBLISH_FAILED",
+            { server: serverUrl },
+            5,
+        );
     }
 
-    return publishData.media_id;
+    return {
+        ok: true as const,
+        command: "publish" as const,
+        media_id: publishData.media_id,
+        title: metadata.title,
+        input_source: metadata.inputSource,
+        cover_source: metadata.coverSource,
+        resolved_cover: metadata.resolvedCover,
+        image_count: metadata.imageCount,
+        server: serverUrl,
+    };
 }

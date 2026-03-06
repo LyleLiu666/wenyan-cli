@@ -1,9 +1,9 @@
 import { Command } from "commander";
 import { publishCommand } from "./commands/publish.js";
-import { prepareRenderContext } from "./commands/render.js";
+import { renderCommand } from "./commands/render.js";
 import pkg from "../package.json" with { type: "json" };
 import { themeCommand } from "./commands/theme.js";
-import { PublishOptions, RenderOptions } from "./types.js";
+import { AppError, PublishOptions, RenderOptions } from "./types.js";
 
 export function createProgram(version: string = pkg.version): Command {
     const program = new Command();
@@ -37,17 +37,18 @@ export function createProgram(version: string = pkg.version): Command {
     addCommonOptions(pubCmd)
         .option("--server <url>", "Server URL to publish through (e.g. https://api.yourdomain.com)")
         .option("--api-key <apiKey>", "API key for the remote server")
+        .option("--preflight", "Validate article metadata without publishing", false)
         .action(async (inputContent: string | undefined, options: PublishOptions) => {
             await runCommandWrapper(async () => {
                 // 如果传入了 --server，则走客户端（远程）模式
                 if (options.server) {
                     const { publishClient } = await import("./commands/client.js");
-                    const mediaId = await publishClient(inputContent, options);
-                    console.log(`[Remote Publish Success] Media ID: ${mediaId}`);
+                    const result = await publishClient(inputContent, options);
+                    return { ...result, mode: "remote" };
                 } else {
                     // 走原有的本地直接发布模式
-                    const mediaId = await publishCommand(inputContent, options);
-                    console.log(`[Local Publish Success] Media ID: ${mediaId}`);
+                    const result = await publishCommand(inputContent, options);
+                    return { ...result, mode: "local" };
                 }
             });
         });
@@ -56,8 +57,7 @@ export function createProgram(version: string = pkg.version): Command {
 
     addCommonOptions(renderCmd).action(async (inputContent: string | undefined, options: RenderOptions) => {
         await runCommandWrapper(async () => {
-            const { gzhContent } = await prepareRenderContext(inputContent, options);
-            console.log(gzhContent.content);
+            return await renderCommand(inputContent, options);
         });
     });
 
@@ -78,7 +78,7 @@ export function createProgram(version: string = pkg.version): Command {
         .action(async (options: { mediaId: string }) => {
             await runCommandWrapper(async () => {
                 const { broadcastCommand } = await import("./commands/broadcast.js");
-                await broadcastCommand(options);
+                return await broadcastCommand(options);
             });
         });
 
@@ -102,19 +102,32 @@ export function createProgram(version: string = pkg.version): Command {
 }
 
 // --- 统一的错误处理包装器 ---
-async function runCommandWrapper(action: () => Promise<void>) {
+async function runCommandWrapper(action: () => Promise<unknown>) {
     try {
-        await action();
+        const result = await action();
+        process.stdout.write(`${JSON.stringify(result)}\n`);
     } catch (error) {
-        if (error instanceof Error) {
-            if (error.message.startsWith("Error:")) {
-                console.error(error.message);
-            } else {
-                console.error("An unexpected error occurred:", error.message);
-            }
-        } else {
-            console.error("An unexpected error occurred:", error);
+        if (error instanceof AppError) {
+            process.stdout.write(
+                `${JSON.stringify({
+                    ok: false,
+                    code: error.code,
+                    message: error.message,
+                    details: error.details,
+                })}\n`,
+            );
+            process.exit(error.exitCode);
+            return;
         }
+
+        const message = error instanceof Error ? error.message : String(error);
+        process.stdout.write(
+            `${JSON.stringify({
+                ok: false,
+                code: "INTERNAL_ERROR",
+                message,
+            })}\n`,
+        );
         process.exit(1);
     }
 }

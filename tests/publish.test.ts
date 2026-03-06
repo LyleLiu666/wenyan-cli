@@ -25,7 +25,7 @@ describe("publishCommand", () => {
         vi.restoreAllMocks();
     });
 
-    it("should successfully publish and return mediaId", async () => {
+    it("should successfully publish and return structured result", async () => {
         // 2. 模拟 prepareRenderContext 返回完整的文章信息
         vi.mocked(prepareRenderContext).mockResolvedValue({
             gzhContent: {
@@ -35,7 +35,8 @@ describe("publishCommand", () => {
                 author: "作者",
                 source_url: "http://source.com"
             } as any,
-            absoluteDirPath: "/mock/path"
+            absoluteDirPath: "/mock/path",
+            inputSource: "argument",
         });
 
         // 3. 模拟底层微信发布接口返回 media_id
@@ -45,8 +46,13 @@ describe("publishCommand", () => {
 
         const result = await publishCommand(md, defaultOptions as any);
 
-        // 4. 验证返回值
-        expect(result).toBe("mock_media_123");
+        expect(result).toMatchObject({
+            ok: true,
+            command: "publish",
+            media_id: "mock_media_123",
+            cover_source: "frontmatter",
+            input_source: "argument",
+        });
         expect(publishToWechatDraft).toHaveBeenCalledWith(
             expect.objectContaining({ title: "测试标题" }),
             { relativePath: "/mock/path" }
@@ -56,27 +62,58 @@ describe("publishCommand", () => {
     it("should throw error if title is missing", async () => {
         vi.mocked(prepareRenderContext).mockResolvedValue({
             gzhContent: { title: "", content: "..." } as any, // 缺失标题
-            absoluteDirPath: undefined
+            absoluteDirPath: undefined,
+            inputSource: "argument",
         });
 
         await expect(publishCommand(md, defaultOptions as any))
-            .rejects.toThrow("Error: 未能找到文章标题");
+            .rejects.toMatchObject({ code: "MISSING_TITLE" });
     });
 
-    it("should throw error if cover is missing", async () => {
+    it("should use first body image as cover fallback", async () => {
         vi.mocked(prepareRenderContext).mockResolvedValue({
-            gzhContent: { title: "有标题", cover: "" } as any, // 缺失封面
-            absoluteDirPath: undefined
+            gzhContent: {
+                title: "有标题",
+                cover: "",
+                content: '<p><img src="http://image.jpg" /></p>',
+            } as any,
+            absoluteDirPath: undefined,
+            inputSource: "file",
+        });
+
+        vi.mocked(publishToWechatDraft).mockResolvedValue({
+            media_id: "mock_media_123",
+        } as any);
+
+        const result = await publishCommand(md, defaultOptions as any);
+
+        expect(result).toMatchObject({
+            ok: true,
+            cover_source: "first_image",
+            input_source: "file",
+        });
+        expect(publishToWechatDraft).toHaveBeenCalledWith(
+            expect.objectContaining({ cover: undefined }),
+            { relativePath: undefined }
+        );
+    });
+
+    it("should throw error if cover and body images are both missing", async () => {
+        vi.mocked(prepareRenderContext).mockResolvedValue({
+            gzhContent: { title: "有标题", cover: "", content: "<p>no image</p>" } as any,
+            absoluteDirPath: undefined,
+            inputSource: "argument",
         });
 
         await expect(publishCommand(md, defaultOptions as any))
-            .rejects.toThrow("Error: 未能找到文章封面");
+            .rejects.toMatchObject({ code: "MISSING_COVER" });
     });
 
     it("should throw error when WeChat API fails to return media_id", async () => {
         vi.mocked(prepareRenderContext).mockResolvedValue({
-            gzhContent: { title: "标题", cover: "封面" } as any,
-            absoluteDirPath: undefined
+            gzhContent: { title: "标题", cover: "封面", content: "<p>内容</p>" } as any,
+            absoluteDirPath: undefined,
+            inputSource: "argument",
         });
 
         // 模拟 API 返回了错误对象（没有 media_id）
@@ -84,6 +121,31 @@ describe("publishCommand", () => {
         vi.mocked(publishToWechatDraft).mockResolvedValue(apiError as any);
 
         await expect(publishCommand(md, defaultOptions as any))
-            .rejects.toThrow(/Error: 上传失败/);
+            .rejects.toMatchObject({ code: "PUBLISH_FAILED" });
+    });
+
+    it("should return preflight result without publishing", async () => {
+        vi.mocked(prepareRenderContext).mockResolvedValue({
+            gzhContent: {
+                title: "预检标题",
+                cover: "",
+                content: '<p><img src="http://image.jpg" /></p>',
+            } as any,
+            absoluteDirPath: "/mock/path",
+            inputSource: "file",
+        });
+
+        const result = await publishCommand(md, { ...defaultOptions, preflight: true } as any);
+
+        expect(result).toMatchObject({
+            ok: true,
+            command: "publish",
+            preflight: true,
+            can_publish: true,
+            cover_source: "first_image",
+            input_source: "file",
+            image_count: 1,
+        });
+        expect(publishToWechatDraft).not.toHaveBeenCalled();
     });
 });

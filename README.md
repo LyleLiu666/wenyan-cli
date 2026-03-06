@@ -93,6 +93,14 @@ wenyan <command>[options]
 -   `-f, --file <path>`：指定本地 Markdown 文件路径
 -   `--no-mac-style`：关闭代码块 Mac 窗口风格
 -   `--no-footnote`：关闭链接转脚注功能
+-   `--preflight`：只做输入与元数据校验，不真正发布
+
+#### 自动化行为
+
+-   输入源优先级：`input-content` > `--file` > `stdin`
+-   若同时提供 `input-content` 和 `--file`，命令会直接报错
+-   传入 `--file` 时不会再等待 `stdin`，适合定时任务、CI、Agent 调用
+-   默认 `stdout` 输出结构化 JSON，过程日志写入 `stderr`
 
 #### 远程模式选项 (Client-Server 架构)
 
@@ -121,6 +129,12 @@ cat example.md | wenyan publish -t lapis -h solarized-light --no-mac-style
 
 ```bash
 wenyan publish -f "./example.md" -t lapis -h solarized-light --no-mac-style
+```
+
+发布前预检：
+
+```bash
+wenyan publish -f "./example.md" --preflight
 ```
 
 **【远程客户端模式】（无需配置微信环境，一键委托云端 Server 发布）**
@@ -202,6 +216,8 @@ wenyan serve --port 3000 --api-key "my-secret-key"
 - 识别并支持本地硬盘绝对路径（如：`/Users/xxx/image.jpg`）
 - 识别并支持当前目录的相对路径（如：`./assets/image.png`）
 - 识别并支持网络路径（如：`https://example.com/image.jpg`）
+- 如果 frontmatter 没有提供 `cover`，会自动使用正文第一张图片作为封面
+- 只有在 `cover` 缺失且正文也没有任何图片时，发布才会失败
 
 ## 环境变量配置
 
@@ -263,7 +279,7 @@ source_url: http://
 -   `title` 文章标题（必填）
 -   `cover` 文章封面
     -   本地路径或网络图片
-    -   如果正文中已有图片，可省略
+    -   如果正文中已有图片，可省略，CLI 会自动使用正文第一张图兜底
 -   `author` 文章作者
 -   `source_url` 原文地址
 

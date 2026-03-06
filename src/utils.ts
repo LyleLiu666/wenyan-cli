@@ -1,5 +1,5 @@
 import path from "node:path";
-import { AppError, RenderOptions } from "./types.js";
+import { AppError, InputSource, RenderOptions } from "./types.js";
 import fs from "node:fs/promises";
 
 export async function readStdin(): Promise<string> {
@@ -44,28 +44,55 @@ export function getNormalizeFilePath(inputPath: string): string {
 export async function getInputContent(
     inputContent: string | undefined,
     options: RenderOptions,
-): Promise<{ content: string; absoluteDirPath: string | undefined }> {
+): Promise<{ content: string; absoluteDirPath: string | undefined; inputSource: InputSource }> {
     const { file } = options;
     let absoluteDirPath: string | undefined = undefined;
 
-    // 1. 尝试从 Stdin 读取
-    if (!inputContent && !process.stdin.isTTY) {
-        inputContent = await readStdin();
+    if (inputContent && file) {
+        throw new AppError("不能同时提供 input-content 和 --file", "INPUT_CONFLICT", { file }, 2);
     }
 
-    // 2. 尝试从文件读取
-    if (!inputContent && file) {
+    if (inputContent) {
+        return {
+            content: inputContent,
+            absoluteDirPath,
+            inputSource: "argument",
+        };
+    }
+
+    if (file) {
         const normalizePath = getNormalizeFilePath(file);
         inputContent = await fs.readFile(normalizePath, "utf-8");
         absoluteDirPath = path.dirname(normalizePath);
+
+        return {
+            content: inputContent,
+            absoluteDirPath,
+            inputSource: "file",
+        };
     }
 
-    // 3. 校验输入
+    if (!process.stdin.isTTY) {
+        inputContent = await readStdin();
+
+        if (inputContent) {
+            return {
+                content: inputContent,
+                absoluteDirPath,
+                inputSource: "stdin",
+            };
+        }
+    }
+
     if (!inputContent) {
-        throw new AppError("missing input-content (no argument, no stdin, and no file).");
+        throw new AppError("missing input-content (no argument, no stdin, and no file).", "MISSING_INPUT", undefined, 2);
     }
 
-    return { content: inputContent, absoluteDirPath };
+    return {
+        content: inputContent,
+        absoluteDirPath,
+        inputSource: "stdin",
+    };
 }
 
 /**

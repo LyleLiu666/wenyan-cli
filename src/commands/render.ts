@@ -1,29 +1,24 @@
 import { configStore, renderStyledContent, StyledContent } from "@wenyan-md/core/wrapper";
-import { getInputContent, getNormalizeFilePath, readStdin } from "../utils.js";
+import { getInputContent, getNormalizeFilePath } from "../utils.js";
 import fs from "node:fs/promises";
 import { AppError, RenderOptions } from "../types.js";
 
 interface RenderContext {
     gzhContent: StyledContent;
     absoluteDirPath: string | undefined;
+    inputSource: "argument" | "file" | "stdin";
 }
 
-// --- 处理输入源、文件路径和主题 ---
-export async function prepareRenderContext(
-    inputContent: string | undefined,
-    options: RenderOptions,
-): Promise<RenderContext> {
-    const { content, absoluteDirPath } = await getInputContent(inputContent, options);
+export async function renderContent(content: string, options: RenderOptions): Promise<StyledContent> {
     const { theme, customTheme, highlight, macStyle, footnote } = options;
 
     let handledCustomTheme: string | undefined = customTheme;
-    // 4. 当用户传入自定义主题路径时，优先级最高
     if (customTheme) {
         const normalizePath = getNormalizeFilePath(customTheme);
         handledCustomTheme = await fs.readFile(normalizePath, "utf-8");
     } else if (theme) {
         // 否则尝试读取配置中的自定义主题
-        handledCustomTheme = configStore.getThemeById(theme);
+        handledCustomTheme = await configStore.getThemeById(theme);
     }
 
     if (!handledCustomTheme && !theme) {
@@ -39,5 +34,29 @@ export async function prepareRenderContext(
         themeCss: handledCustomTheme,
     });
 
-    return { gzhContent, absoluteDirPath };
+    return gzhContent;
+}
+
+// --- 处理输入源、文件路径和主题 ---
+export async function prepareRenderContext(
+    inputContent: string | undefined,
+    options: RenderOptions,
+): Promise<RenderContext> {
+    const { content, absoluteDirPath, inputSource } = await getInputContent(inputContent, options);
+    const gzhContent = await renderContent(content, options);
+
+    return { gzhContent, absoluteDirPath, inputSource };
+}
+
+export async function renderCommand(inputContent: string | undefined, options: RenderOptions) {
+    const { gzhContent, inputSource } = await prepareRenderContext(inputContent, options);
+
+    return {
+        ok: true as const,
+        command: "render" as const,
+        input_source: inputSource,
+        title: gzhContent.title || null,
+        cover: gzhContent.cover || null,
+        html: gzhContent.content,
+    };
 }

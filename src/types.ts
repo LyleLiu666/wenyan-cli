@@ -10,10 +10,19 @@ export interface RenderOptions {
 export interface PublishOptions extends RenderOptions {
     server?: string;
     apiKey?: string;
+    preflight?: boolean;
 }
 
+export type InputSource = "argument" | "file" | "stdin";
+export type CoverSource = "frontmatter" | "first_image";
+
 export class AppError extends Error {
-    constructor(public message: string) {
+    constructor(
+        public message: string,
+        public code: string = "APP_ERROR",
+        public details?: Record<string, unknown>,
+        public exitCode: number = 1,
+    ) {
         super(message);
         this.name = "AppError";
     }

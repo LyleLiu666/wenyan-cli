@@ -14,7 +14,7 @@ interface ThemeOptions {
 export async function themeCommand(options: ThemeOptions) {
     const { list, add, name, path, rm } = options;
     if (list) {
-        listThemes();
+        await listThemes();
         return;
     }
     if (add) {
@@ -27,11 +27,11 @@ export async function themeCommand(options: ThemeOptions) {
     }
 }
 
-function listThemes() {
+async function listThemes() {
     const themes = getAllGzhThemes();
     console.log("\n内置主题：");
     themes.forEach((theme) => console.log(`- ${theme.meta.id}: ${theme.meta.description}`));
-    const customThemes = configStore.getThemes();
+    const customThemes = await configStore.getThemes();
     if (customThemes.length > 0) {
         console.log("\n自定义主题：");
         customThemes.forEach((theme) => {
@@ -47,7 +47,7 @@ async function addTheme(name?: string, path?: string) {
         return;
     }
 
-    if (checkThemeExists(name) || checkCustomThemeExists(name)) {
+    if (checkThemeExists(name) || (await checkCustomThemeExists(name))) {
         console.log(`❌ 主题 "${name}" 已存在\n`);
         return;
     }
@@ -60,11 +60,11 @@ async function addTheme(name?: string, path?: string) {
             return;
         }
         const content = await response.text();
-        configStore.addThemeToConfig(name, content);
+        await configStore.addThemeToConfig(name, content);
     } else {
         const normalizePath = getNormalizeFilePath(path);
         const content = await fs.readFile(normalizePath, "utf-8");
-        configStore.addThemeToConfig(name, content);
+        await configStore.addThemeToConfig(name, content);
     }
     console.log(`✅ 主题 "${name}" 已添加\n`);
 }
@@ -74,11 +74,11 @@ async function removeTheme(name: string) {
         console.log(`❌ 默认主题 "${name}" 不能删除\n`);
         return;
     }
-    if (!checkCustomThemeExists(name)) {
+    if (!(await checkCustomThemeExists(name))) {
         console.log(`❌ 自定义主题 "${name}" 不存在\n`);
         return;
     }
-    configStore.deleteThemeFromConfig(name);
+    await configStore.deleteThemeFromConfig(name);
     console.log(`✅ 主题 "${name}" 已删除\n`);
 }
 
@@ -87,7 +87,7 @@ function checkThemeExists(themeId: string): boolean {
     return themes.some((theme) => theme.meta.id === themeId);
 }
 
-function checkCustomThemeExists(themeId: string): boolean {
-    const customThemes = configStore.getThemes();
+async function checkCustomThemeExists(themeId: string): Promise<boolean> {
+    const customThemes = await configStore.getThemes();
     return customThemes.some((theme) => theme.id === themeId);
 }
