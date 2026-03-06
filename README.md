@@ -2,12 +2,12 @@
     <img alt = "logo" src="https://raw.githubusercontent.com/caol64/wenyan/main/Data/256-mac.png" />
 </div>
 
-# 文颜 CLI (魔改版)
+# 文颜 CLI
 
 [![License](https://img.shields.io/github/license/LyleLiu666/wenyan-cli)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/LyleLiu666/wenyan-cli?style=social)](https://github.com/LyleLiu666/wenyan-cli)
 
-> 基于 [caol64/wenyan-cli](https://github.com/caol64/wenyan-cli) 的个人魔改版本
+> 面向自动化发布场景持续演化的文颜 CLI 版本
 
 ## 简介
 
@@ -20,12 +20,19 @@
 
 文颜的目标是：**让写作者专注内容，而不是排版和平台适配**。
 
-## 魔改说明
+## 项目说明
 
-本仓库是在原版基础上的个人定制版本，可能包含实验性功能和未合并到上游的修改。
+本仓库已在原始 `wenyan-cli` 基础上持续演化，当前重点放在自动化发布、非交互调用、Client-Server 发布链路和脚本友好的 JSON 输出。
 
-- 原版项目：[caol64/wenyan-cli](https://github.com/caol64/wenyan-cli)
-- 如需稳定版本，请使用官方 npm 包：`@wenyan-md/cli`
+- 面向定时任务、CI、Agent 等非交互场景
+- 保留文颜的排版与发布能力，同时扩展自动化能力
+- 与原版设计目标和命令行为已有明显差异
+
+## 鸣谢
+
+本项目最初源自 [caol64/wenyan-cli](https://github.com/caol64/wenyan-cli) 与文颜生态。排版能力、基础发布思路以及项目命名均承接自原版，在此致谢。
+
+如需更贴近原版体验或使用官方发布版本，请使用 npm 包：`@wenyan-md/cli`
 
 ## 安装方式
 
