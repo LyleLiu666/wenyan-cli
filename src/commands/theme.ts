@@ -2,6 +2,7 @@ import { getAllGzhThemes } from "@wenyan-md/core";
 import { getNormalizeFilePath } from "../utils.js";
 import fs from "node:fs/promises";
 import { configStore } from "@wenyan-md/core/wrapper";
+import { getProjectThemeById, listProjectThemes } from "../project-themes.js";
 
 interface ThemeOptions {
     list?: boolean;
@@ -29,13 +30,20 @@ export async function themeCommand(options: ThemeOptions) {
 
 async function listThemes() {
     const themes = getAllGzhThemes();
-    console.log("\n内置主题：");
-    themes.forEach((theme) => console.log(`- ${theme.meta.id}: ${theme.meta.description}`));
+    const projectThemes = listProjectThemes();
     const customThemes = await configStore.getThemes();
+
+    console.log("\n内置主题（core）：");
+    themes.forEach((theme) => console.log(`- ${theme.meta.id}: ${theme.meta.description}`));
+
+    console.log("\n扩展主题（稿舟）：");
+    projectThemes.forEach((theme) => console.log(`- ${theme.id}: ${theme.description}`));
+
     if (customThemes.length > 0) {
         console.log("\n自定义主题：");
         customThemes.forEach((theme) => {
-            console.log(`- ${theme.id}: ${theme.description ?? ""}`);
+            const suffix = checkProjectThemeExists(theme.id) ? " [与扩展主题同名，渲染时优先使用自定义主题]" : "";
+            console.log(`- ${theme.id}: ${theme.description ?? ""}${suffix}`);
         });
     }
     console.log("");
@@ -47,7 +55,7 @@ async function addTheme(name?: string, path?: string) {
         return;
     }
 
-    if (checkThemeExists(name) || (await checkCustomThemeExists(name))) {
+    if (checkBuiltinThemeExists(name) || checkProjectThemeExists(name) || (await checkCustomThemeExists(name))) {
         console.log(`❌ 主题 "${name}" 已存在\n`);
         return;
     }
@@ -70,21 +78,34 @@ async function addTheme(name?: string, path?: string) {
 }
 
 async function removeTheme(name: string) {
-    if (checkThemeExists(name)) {
-        console.log(`❌ 默认主题 "${name}" 不能删除\n`);
+    const hasCustomTheme = await checkCustomThemeExists(name);
+
+    if (hasCustomTheme) {
+        await configStore.deleteThemeFromConfig(name);
+        const fallbackNotice = checkProjectThemeExists(name) ? "，当前会回退到同名扩展主题" : "";
+        console.log(`✅ 自定义主题 "${name}" 已删除${fallbackNotice}\n`);
         return;
     }
-    if (!(await checkCustomThemeExists(name))) {
-        console.log(`❌ 自定义主题 "${name}" 不存在\n`);
+
+    if (checkBuiltinThemeExists(name)) {
+        console.log(`❌ 内置主题 "${name}" 不能删除\n`);
         return;
     }
-    await configStore.deleteThemeFromConfig(name);
-    console.log(`✅ 主题 "${name}" 已删除\n`);
+    if (checkProjectThemeExists(name)) {
+        console.log(`❌ 扩展主题 "${name}" 不能删除\n`);
+        return;
+    }
+
+    console.log(`❌ 自定义主题 "${name}" 不存在\n`);
 }
 
-function checkThemeExists(themeId: string): boolean {
+function checkBuiltinThemeExists(themeId: string): boolean {
     const themes = getAllGzhThemes();
     return themes.some((theme) => theme.meta.id === themeId);
+}
+
+function checkProjectThemeExists(themeId: string): boolean {
+    return Boolean(getProjectThemeById(themeId));
 }
 
 async function checkCustomThemeExists(themeId: string): Promise<boolean> {

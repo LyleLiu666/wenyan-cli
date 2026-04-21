@@ -1,34 +1,38 @@
 {
-  "name": "@wenyan-md/cli",
+  "name": "@lyleliu666/gaozhou-cli",
   "version": "1.0.11",
-  "description": "A CLI tool for Wenyan markdown rendering & publishing",
-  "author": "Lei <caol64@gmail.com> (https://github.com/caol64)",
+  "description": "A CLI for Markdown article rendering and automated publishing",
+  "author": "Lyle",
+  "contributors": [
+    "Lei <caol64@gmail.com> (https://github.com/caol64)"
+  ],
   "license": "Apache-2.0",
   "keywords": [
     "公众号",
     "markdown",
-    "文颜",
-    "wenyan",
+    "gaozhou",
     "wechat",
     "publishing",
-    "renderer"
+    "renderer",
+    "automation",
+    "cli"
   ],
   "type": "module",
   "bin": {
-    "wenyan": "./dist/cli.js"
+    "gaozhou": "./dist/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/types/index.d.ts",
   "files": [
     "dist"
   ],
-  "homepage": "https://github.com/caol64/wenyan-cli#readme",
+  "homepage": "https://github.com/LyleLiu666/wenyan-cli#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/caol64/wenyan-cli.git"
+    "url": "git+https://github.com/LyleLiu666/wenyan-cli.git"
   },
   "bugs": {
-    "url": "https://github.com/caol64/wenyan-cli/issues"
+    "url": "https://github.com/LyleLiu666/wenyan-cli/issues"
   },
   "scripts": {
     "build": "tsc",
@@ -39,6 +43,7 @@
     "test:cli": "vitest run tests/cli.test.ts",
     "test:render": "vitest run tests/render.test.ts",
     "test:publish": "vitest run tests/publish.test.ts",
+    "test:theme": "vitest run tests/project-themes.test.ts tests/theme.test.ts",
     "test:realPublish": "pnpm build && pnpm dotenv -e .env.test -- node ./dist/cli.js publish -f tests/publish.md -c tests/manhua.css --no-mac-style",
     "test:serverPublish": "pnpm build && node ./dist/cli.js publish -f tests/publish.md -c tests/manhua.css --no-mac-style --server http://localhost:3000"
   },

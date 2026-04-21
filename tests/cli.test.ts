@@ -33,9 +33,13 @@ describe("CLI Argument Parsing", () => {
         expect(program.version()).toBe("1.0.0");
     });
 
+    it("should expose the rebranded CLI name", () => {
+        expect(program.name()).toBe("gaozhou");
+    });
+
     it("should call publish command with correct options", async () => {
-        // 模拟命令行输入: wenyan publish -f test.md -t rainbow --no-mac-style
-        const args = ["node", "wenyan", "publish", "-f", "test.md", "-t", "rainbow", "--no-mac-style"];
+        // 模拟命令行输入: gaozhou publish -f test.md -t rainbow --no-mac-style
+        const args = ["node", "gaozhou", "publish", "-f", "test.md", "-t", "rainbow", "--no-mac-style"];
         const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
         await program.parseAsync(args);
@@ -58,8 +62,8 @@ describe("CLI Argument Parsing", () => {
     });
 
     it("should call render command with string input", async () => {
-        // 模拟命令行输入: wenyan render "# Hello"
-        const args = ["node", "wenyan", "render", "# Hello"];
+        // 模拟命令行输入: gaozhou render "# Hello"
+        const args = ["node", "gaozhou", "render", "# Hello"];
         const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
         await program.parseAsync(args);
@@ -76,7 +80,7 @@ describe("CLI Argument Parsing", () => {
     });
 
     it("should pass preflight option to publish command", async () => {
-        const args = ["node", "wenyan", "publish", "-f", "test.md", "--preflight"];
+        const args = ["node", "gaozhou", "publish", "-f", "test.md", "--preflight"];
 
         await program.parseAsync(args);
 
@@ -93,7 +97,7 @@ describe("CLI Argument Parsing", () => {
         // Spy on console.log or process.stdout if needed,
         // but here we just ensure the default action doesn't crash
         const outputSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
-        const args = ["node", "wenyan"];
+        const args = ["node", "gaozhou"];
 
         await program.parseAsync(args);
 

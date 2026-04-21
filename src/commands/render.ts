@@ -2,11 +2,27 @@ import { configStore, renderStyledContent, StyledContent } from "@wenyan-md/core
 import { getInputContent, getNormalizeFilePath } from "../utils.js";
 import fs from "node:fs/promises";
 import { AppError, RenderOptions } from "../types.js";
+import { getProjectThemeById } from "../project-themes.js";
 
 interface RenderContext {
     gzhContent: StyledContent;
     absoluteDirPath: string | undefined;
     inputSource: "argument" | "file" | "stdin";
+}
+
+async function resolveRegisteredThemeCss(themeId?: string): Promise<string | undefined> {
+    if (!themeId) {
+        return undefined;
+    }
+
+    // 历史上用户保存过的自定义主题需要优先于新增的项目内置主题，
+    // 否则升级后会出现“同名主题被静默替换”的行为漂移。
+    const customThemeCss = await configStore.getThemeById(themeId);
+    if (customThemeCss) {
+        return customThemeCss;
+    }
+
+    return getProjectThemeById(themeId)?.css;
 }
 
 export async function renderContent(content: string, options: RenderOptions): Promise<StyledContent> {
@@ -16,9 +32,8 @@ export async function renderContent(content: string, options: RenderOptions): Pr
     if (customTheme) {
         const normalizePath = getNormalizeFilePath(customTheme);
         handledCustomTheme = await fs.readFile(normalizePath, "utf-8");
-    } else if (theme) {
-        // 否则尝试读取配置中的自定义主题
-        handledCustomTheme = await configStore.getThemeById(theme);
+    } else {
+        handledCustomTheme = await resolveRegisteredThemeCss(theme);
     }
 
     if (!handledCustomTheme && !theme) {

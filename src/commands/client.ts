@@ -7,6 +7,7 @@ import { AppError, PublishOptions } from "../types.js";
 import { collectPublishMetadata } from "../publish-metadata.js";
 import { extractImageUrls, getInputContent } from "../utils.js";
 import { renderContent } from "./render.js";
+import { SERVICE_NAME } from "../brand.js";
 
 const logInfo = (message: string) => {
     console.error(message);
@@ -28,7 +29,9 @@ export async function publishClient(inputContent: string | undefined, options: P
 
         const healthData: any = await healthRes.json();
 
-        if (healthData.status !== "ok" || healthData.service !== "wenyan-cli") {
+        const acceptedServiceNames = new Set([SERVICE_NAME, "wenyan-cli"]);
+
+        if (healthData.status !== "ok" || !acceptedServiceNames.has(healthData.service)) {
             throw new Error(`Invalid server response. Make sure the server URL is correct.`);
         }
 

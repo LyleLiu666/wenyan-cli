@@ -1,21 +1,36 @@
-# wenyan-cli server 模式文档
+# 稿舟 CLI Server 模式文档
 
-## API 接口设计
+`gaozhou serve` 会启动一个轻量 HTTP 服务，把“排版 + 图片上传 + 发布到公众号”的能力集中到固定 IP 机器上。这样本地客户端只需要负责准备内容和发起请求。
 
-所有的内容接口采用流式上传（支持 10MB），安全且高效。如果设置了鉴权，请在 Header 中携带 `x-api-key: your-api-key`。
-
-### 1. 健康检查
+## 健康检查
 
 ```bash
 curl http://localhost:3000/health
 ```
 
-### 2. 文件/图片上传接口
+成功时会返回类似结果：
 
-支持上传图片和 Markdown 文件。上传后，文件将被安全地存储在服务器临时目录（10分钟后自动回收），并返回供下一步使用的 `fileId`。
+```json
+{
+  "status": "ok",
+  "service": "gaozhou-cli",
+  "version": "1.0.11"
+}
+```
+
+## 鉴权
+
+如果启动时传入了 `--api-key`，后续所有上传和发布请求都要带上：
+
+```http
+x-api-key: your-api-key
+```
+
+## 上传接口
+
+支持上传 Markdown 文件和图片文件。服务端会把文件暂存到临时目录，默认 10 分钟后自动回收。
 
 ```bash
-# 上传 Markdown 或 图片
 curl -X POST http://localhost:3000/upload \
   -H "x-api-key: my-secret-key" \
   -F "file=@/path/to/article.md"
@@ -35,9 +50,9 @@ curl -X POST http://localhost:3000/upload \
 }
 ```
 
-### 3. 远程发布接口
+## 发布接口
 
-使用上传阶段获得的 `fileId` 触发服务端的排版渲染和微信发布流程。服务端会自动读取暂存的文件内容并发布。
+拿到上传阶段返回的 `fileId` 后，再调用 `/publish` 完成真正发布。
 
 ```bash
 curl -X POST http://localhost:3000/publish \
@@ -45,8 +60,43 @@ curl -X POST http://localhost:3000/publish \
   -H "Content-Type: application/json" \
   -d '{
     "fileId": "550e8400-e29b-41d4-a716-446655440000.md",
-    "theme": "default",
+    "theme": "paper-ink",
     "highlight": "solarized-light",
-    "macStyle": true
+    "macStyle": true,
+    "footnote": true
   }'
 ```
+
+## 客户端调用建议
+
+通常不需要你自己手写 `/upload` 和 `/publish` 调用。更常见的方式是直接在本地运行：
+
+```bash
+gaozhou publish -f ./article.md --server http://localhost:3000 --api-key "my-secret-key"
+```
+
+CLI 会自动完成这些动作：
+
+1. 读取 Markdown
+2. 扫描本地图片
+3. 上传 Markdown 和图片到服务端
+4. 请求服务端发布
+
+## 错误处理
+
+服务端错误会返回统一结构：
+
+```json
+{
+  "code": -1,
+  "desc": "具体错误信息"
+}
+```
+
+常见失败原因：
+
+- `fileId` 不存在或已经过期
+- 上传了不支持的文件类型
+- `x-api-key` 不正确
+- 微信公众号环境变量没有配置好
+- 文章缺少必要元数据，比如标题或封面

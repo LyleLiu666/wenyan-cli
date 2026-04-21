@@ -1,65 +1,64 @@
-<div align="center">
-    <img alt = "logo" src="https://raw.githubusercontent.com/caol64/wenyan/main/Data/256-mac.png" />
-</div>
-
-# 文颜 CLI
+# 稿舟 CLI
 
 [![License](https://img.shields.io/github/license/LyleLiu666/wenyan-cli)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/LyleLiu666/wenyan-cli?style=social)](https://github.com/LyleLiu666/wenyan-cli)
 
-> 面向自动化发布场景持续演化的文颜 CLI 版本
+> 面向自动化发布、脚本调用和 Agent 场景持续演化的 Markdown 排版与发布 CLI。
 
-## 简介
+## 为什么改名
 
-**[文颜（Wenyan）](https://wenyan.yuzhi.tech)** 是一款多平台 Markdown 排版与发布工具，支持将 Markdown 一键转换并发布至：
+这个仓库最初基于 `caol64/wenyan-cli` 演化而来，但后续路线已经明显分开：
 
--   微信公众号
--   知乎
--   今日头条
--   以及其它内容平台（持续扩展中）
+- 更强调非交互调用、CI、定时任务和 Agent 场景
+- 更强调结构化 JSON 输出和可脚本化行为
+- 更强调 Client-Server 发布链路
 
-文颜的目标是：**让写作者专注内容，而不是排版和平台适配**。
+为了避免继续和上游官方 CLI 混淆，这个分支现在使用新的项目名和命令名：
 
-## 项目说明
+- 项目名：`稿舟 CLI`
+- CLI 命令：`gaozhou`
+- 服务自报名称：`gaozhou-cli`
 
-本仓库已在原始 `wenyan-cli` 基础上持续演化，当前重点放在自动化发布、非交互调用、Client-Server 发布链路和脚本友好的 JSON 输出。
+> 说明：仓库的 GitHub 路径目前仍然是 `wenyan-cli`，这是仓库地址层面的历史包袱，不代表产品名继续沿用旧品牌。
 
-- 面向定时任务、CI、Agent 等非交互场景
-- 保留文颜的排版与发布能力，同时扩展自动化能力
-- 与原版设计目标和命令行为已有明显差异
+## 项目定位
 
-## 鸣谢
+稿舟 CLI 适合这些场景：
 
-本项目最初源自 [caol64/wenyan-cli](https://github.com/caol64/wenyan-cli) 与文颜生态。排版能力、基础发布思路以及项目命名均承接自原版，在此致谢。
+- 本地把 Markdown 排版成适合公众号的 HTML
+- 在脚本、CI、定时任务里稳定调用发布流程
+- 把发布能力部署到固定 IP 的 Server，再由本地客户端远程调用
+- 给 Agent、自动化平台和非交互流程提供结构化输出
 
-如需更贴近原版体验或使用官方发布版本，请使用 npm 包：`@wenyan-md/cli`
+## 安装
 
-## 安装方式
-
-### 方式一：本地安装（推荐）
+### 方式一：从仓库本地安装
 
 ```bash
-# 克隆仓库
 git clone https://github.com/LyleLiu666/wenyan-cli.git
 cd wenyan-cli
-
-# 安装依赖
-npm install
-
-# 构建并链接
-npm run build
+pnpm install
+pnpm build
 npm link
 ```
 
-安装完成后即可使用：
+安装后可直接使用：
 
 ```bash
-wenyan --help
+gaozhou --help
 ```
 
-### 方式二：使用官方 npm 包
+### 方式二：直接从 Git 仓库安装
 
-如需稳定版本，请使用官方发布的 npm 包：
+```bash
+npm install -g git+https://github.com/LyleLiu666/wenyan-cli.git
+```
+
+### npm 包说明
+
+截至 2026-04-21，新的包名 `@lyleliu666/gaozhou-cli` 还没有发布到 npm。
+
+如果你想使用更接近上游官方体验的版本，请改用：
 
 ```bash
 npm install -g @wenyan-md/cli
@@ -67,252 +66,160 @@ npm install -g @wenyan-md/cli
 
 ## 基本用法
 
-CLI 主命令：
-
 ```bash
-wenyan <command>[options]
+gaozhou <command> [options]
 ```
 
-目前支持的子命令有：
-- `publish` 排版并发布到公众号草稿箱（支持纯本地模式与 Client-Server 远程发布模式）
-- `render` 仅排版并输出 HTML，用于本地测试
-- `theme` 终端主题管理
-- `serve` 启动 HTTP 服务器，提供渲染和发布接口（Server 模式）
+当前主要子命令：
 
-## 子命令详解
+- `publish` 排版并发布到公众号草稿箱
+- `render` 只渲染，不发布
+- `theme` 主题管理
+- `broadcast` 群发已发布文章
+- `serve` 启动远程发布服务
 
-### `publish`
+## 常见命令
 
-将 Markdown 转换为适配微信公众号的富文本 HTML，并上传到草稿箱。
-
-#### 参数
-
--   `<input-content>`
-    Markdown 内容，可以直接作为参数传入，或通过 stdin 管道输入。
-
-#### 常用排版选项
-
--   `-t, --theme <theme-id>`：主题id（默认 `default`），支持内置主题或通过 `theme --add` 添加的自定义主题。
-    -   [内置主题一览](https://github.com/caol64/wenyan-core/tree/main/src/assets/themes)
--   `-c, --custom-theme <path>`：指定临时自定义主题的本地/网络路径（优先级高于 `-t`）
--   `-h, --highlight <highlight-theme-id>`：代码高亮主题（默认 `solarized-light`）
-    -   支持：atom-one-dark / atom-one-light / dracula / github-dark / github / monokai / solarized-dark / solarized-light / xcode
--   `-f, --file <path>`：指定本地 Markdown 文件路径
--   `--no-mac-style`：关闭代码块 Mac 窗口风格
--   `--no-footnote`：关闭链接转脚注功能
--   `--preflight`：只做输入与元数据校验，不真正发布
-
-#### 自动化行为
-
--   输入源优先级：`input-content` > `--file` > `stdin`
--   若同时提供 `input-content` 和 `--file`，命令会直接报错
--   传入 `--file` 时不会再等待 `stdin`，适合定时任务、CI、Agent 调用
--   默认 `stdout` 输出结构化 JSON，过程日志写入 `stderr`
-
-#### 远程模式选项 (Client-Server 架构)
-
-为了解决微信公众号 API 需要固定 IP 的限制，你可以将 CLI 配置为客户端模式，连接到部署在云服务器上的文颜 Server。**在此模式下，客户端会自动解析 Markdown 中的本地图片（包括封面），一并自动上传至 Server 处理，体验与本地发布完全一致！**
-
--   `--server <url>`：指定远程文颜 Server 的地址（例如：`https://api.yourdomain.com`）
--   `--api-key <apiKey>`：请求 Server 的鉴权密钥
-
-#### 使用示例
-
-**【本地模式】（需要当前机器拥有固定的公网 IP 并已加入微信白名单）**
-
-直接传入内容：
+### 渲染本地 Markdown
 
 ```bash
-wenyan publish "# Hello, Wenyan" -t lapis -h solarized-light
+gaozhou render -f ./example.md -t paper-ink
 ```
 
-从管道读取：
+### 发布本地 Markdown
 
 ```bash
-cat example.md | wenyan publish -t lapis -h solarized-light --no-mac-style
+gaozhou publish -f ./example.md -t forest-notes --no-mac-style
 ```
 
-从文件读取：
+### 发布前只做预检
 
 ```bash
-wenyan publish -f "./example.md" -t lapis -h solarized-light --no-mac-style
+gaozhou publish -f ./example.md --preflight
 ```
 
-发布前预检：
+### 通过远程 Server 发布
 
 ```bash
-wenyan publish -f "./example.md" --preflight
+gaozhou publish -f ./example.md -t sunset-magazine \
+  --server http://localhost:3000 \
+  --api-key "my-secret-key"
 ```
 
-**【远程客户端模式】（无需配置微信环境，一键委托云端 Server 发布）**
-```bash
-wenyan publish -f "./example.md" -t lapis --server https://localhost:3000 --api-key "my-secret-key"
-```
-
----
-
-### `broadcast`
-
-将已上传到公众号草稿箱的文章群发给所有粉丝。
-
-#### 参数
-
-- `-m, --media-id <id>`：要群发文章的 media_id（从 `publish` 命令的输出中获取）
-
-#### 使用示例
+### 启动服务端
 
 ```bash
-# 群发文章
-wenyan broadcast -m "3oNlDjg8x5-y_zq1H3w5mKpMxGg8h0wQmFp4Ca1XhUk"
+gaozhou serve --port 3000 --api-key "my-secret-key"
 ```
 
-> [!WARNING]
-> 群发有频率限制：订阅号每天 1 次，服务号每月 4 次。
+## 主题
 
----
-
-### `theme`
-
-主题管理，浏览内置主题、添加/删除自定义主题。
-
-#### 常用选项
-
--   `-l, --list`：列出所有可用主题
--   `--add`：添加自定义主题（永久）
-    -   `--name <name>`：主题名称
-    -   `--path <path>`：主题路径（本地路径或网络 URL）
--   `--rm <name>`：删除自定义主题
-
-#### 使用示例
+### 查看所有主题
 
 ```bash
-# 列出可用主题
-wenyan theme -l
-
-# 安装自定义主题
-wenyan theme --add --name new-theme --path https://wenyan.yuzhi.tech/manhua.css
-
-# 删除自定义主题
-wenyan theme --rm new-theme
+gaozhou theme -l
 ```
 
-### `serve`
+`theme -l` 现在会分三组展示：
 
-启动 HTTP 服务器，提供 REST API 接口。适用于部署在云服务器上，完美解决本地网络环境多变导致**无法通过微信公众号 API 白名单**的问题。
+- `内置主题（core）`：来自 `@wenyan-md/core`
+- `扩展主题（稿舟）`：这个仓库自带的新主题
+- `自定义主题`：你自己安装的主题
 
-#### 常用选项
+### 稿舟自带扩展主题
 
--   `-p, --port <port>`：监听端口（默认 `3000`）
--   `--api-key <apiKey>`：开启 API 调用鉴权。若设置，客户端必须提供相同的密钥。
+除了 core 自带主题之外，当前仓库额外提供了这些主题（目前共 18 个扩展主题）：
 
-#### 使用示例
+- `paper-ink`
+- `forest-notes`
+- `sunset-magazine`
+- `midnight-code`
+- `lotus-breeze`
+- `amber-ledger`
+- `ocean-journal`
+- `graphite-letter`
+- `aurora-slate`
+- `bamboo-brief`
+- `cocoa-paper`
+- `dune-notebook`
+- `mist-ledger`
+- `maple-editorial`
+- `jade-manuscript`
+- `steel-column`
+- `peach-study`
+- `starlight-ledger`
 
-在具有固定 IP 的云服务器上启动服务：
+这些主题开箱即用，不需要额外下载。
+
+### 添加自定义主题
 
 ```bash
-# 务必在服务器环境变量中配置好 WECHAT_APP_ID 和 WECHAT_APP_SECRET
-wenyan serve --port 3000 --api-key "my-secret-key"
+gaozhou theme --add --name my-theme --path ./my-theme.css
 ```
 
-#### [API 接口设计](docs/server.md)
+也支持从远程 CSS 安装：
 
-## 关于图片与封面自动上传
+```bash
+gaozhou theme --add --name my-theme --path https://example.com/my-theme.css
+```
 
-无论是本地模式还是通过 `--server` 的客户端模式，文颜 CLI 都提供**极度智能**的图片处理机制：
+### 删除自定义主题
 
-- 识别并支持本地硬盘绝对路径（如：`/Users/xxx/image.jpg`）
-- 识别并支持当前目录的相对路径（如：`./assets/image.png`）
-- 识别并支持网络路径（如：`https://example.com/image.jpg`）
-- 如果 frontmatter 没有提供 `cover`，会自动使用正文第一张图片作为封面
-- 只有在 `cover` 缺失且正文也没有任何图片时，发布才会失败
+```bash
+gaozhou theme --rm my-theme
+```
 
-## 环境变量配置
+> `core` 内置主题和 `稿舟` 扩展主题都属于受保护主题，不能删除。
 
-在实际向微信公众号发文的环境（你的本地或部署 `serve` 的服务器）中，必须配置以下环境变量：
+## 输入规则
 
--   `WECHAT_APP_ID`
--   `WECHAT_APP_SECRET`
+`publish` 和 `render` 支持三种输入来源，但一次只能用一种：
 
-### macOS / Linux
+- 直接传入字符串参数
+- `--file <path>` 读取本地文件
+- 从 `stdin` 管道读取
+
+优先级和行为：
+
+- 如果同时传 `input-content` 和 `--file`，命令会直接报错
+- 如果传了 `--file`，不会再等待 `stdin`
+- 默认 `stdout` 输出结构化 JSON，过程日志写到 `stderr`
+
+## 图片与封面处理
+
+无论本地模式还是远程 `--server` 模式，稿舟 CLI 都支持：
+
+- 本地绝对路径图片
+- 当前目录相对路径图片
+- 网络图片
+- `frontmatter` 中的 `cover`
+- `cover` 缺失时，自动回退到正文第一张图
+
+只有在没有 `cover`，并且正文中也没有任何图片时，发布才会失败。
+
+## 环境变量
+
+实际发布到微信公众号时，需要在执行环境里提供：
+
+- `WECHAT_APP_ID`
+- `WECHAT_APP_SECRET`
 
 临时使用：
 
 ```bash
-WECHAT_APP_ID=xxx WECHAT_APP_SECRET=yyy wenyan publish "your markdown"
+WECHAT_APP_ID=xxx WECHAT_APP_SECRET=yyy gaozhou publish -f ./example.md
 ```
 
-永久配置（推荐，写入 `~/.bashrc` 或 `~/.zshrc`）：
-```bash
-export WECHAT_APP_ID=xxx
-export WECHAT_APP_SECRET=yyy
-```
+## Server 模式
 
-### Windows (PowerShell)
+如果本地机器没有稳定公网 IP，可以把发布能力部署到一台固定 IP 的服务器上：
 
-临时使用：
-```powershell
-$env:WECHAT_APP_ID="xxx"
-$env:WECHAT_APP_SECRET="yyy"
-wenyan publish example.md
-```
+1. 在服务器上运行 `gaozhou serve`
+2. 在本地执行 `gaozhou publish --server ...`
+3. 本地客户端会自动上传 Markdown 和本地图片，再由服务端完成发布
 
-永久设置（推荐）：
+详细接口说明见：[docs/server.md](docs/server.md)
 
-控制面板 → 系统和安全 → 系统 → 高级系统设置 → 环境变量 → 添加 `WECHAT_APP_ID` 和 `WECHAT_APP_SECRET`。
+## 致谢
 
-## 微信公众号 IP 白名单
-
-> [!IMPORTANT]
->
-> 请确保运行文颜的机器 IP 已加入微信公众号后台的 IP 白名单，否则上传接口将调用失败。
-
-配置说明文档：[https://yuzhi.tech/docs/wenyan/upload](https://yuzhi.tech/docs/wenyan/upload)
-
-## Markdown Frontmatter 说明（必读）
-
-为了正确上传文章，每篇 Markdown 顶部需要包含 frontmatter：
-
-```md
----
-title: 在本地跑一个大语言模型(2) - 给模型提供外部知识库
-cover: /Users/xxx/image.jpg
-author: xxx
-source_url: http://
----
-```
-
-字段说明：
-
--   `title` 文章标题（必填）
--   `cover` 文章封面
-    -   本地路径或网络图片
-    -   如果正文中已有图片，可省略，CLI 会自动使用正文第一张图兜底
--   `author` 文章作者
--   `source_url` 原文地址
-
-## 示例文章格式
-
-```md
----
-title: 在本地跑一个大语言模型(2) - 给模型提供外部知识库
-cover: /Users/lei/Downloads/result_image.jpg
----
-
-在[上一篇文章](https://babyno.top/posts/2024/02/running-a-large-language-model-locally/)中，我们展示了如何在本地运行大型语言模型。本篇将介绍如何让模型从外部知识库中检索定制数据，提升答题准确率，让它看起来更“智能”。
-
-## 准备模型
-
-访问 `Ollama` 的模型页面，搜索 `qwen`，我们使用支持中文语义的“[通义千问](https://ollama.com/library/qwen:7b)”模型进行实验。
-
-![](https://mmbiz.qpic.cn/mmbiz_jpg/Jsq9IicjScDVUjkPc6O22ZMvmaZUzof5bLDjMyLg2HeAXd0icTvlqtL7oiarSlOicTtiaiacIxpVOV1EeMKl96PhRPPw/640?wx_fmt=jpeg)
-```
-
-## 赞助
-
-如果你觉得文颜对你有帮助，可以给我家猫咪买点罐头 ❤️
-
-[https://yuzhi.tech/sponsor](https://yuzhi.tech/sponsor)
-
-## License
-
-Apache License Version 2.0
+稿舟 CLI 继承了上游 `caol64/wenyan-cli` 和 `@wenyan-md/core` 的基础能力与早期思路。这个仓库现在已经进入独立演化阶段，但仍然感谢上游项目在排版和发布能力上的开创工作。

@@ -1,178 +1,87 @@
-<div align="center">
-  <img alt="logo" src="https://raw.githubusercontent.com/caol64/wenyan/main/Data/256-mac.png" width="120" />
-</div>
+# 稿舟 CLI Docker 使用说明
 
-# wenyan-cli (Docker)
+这个仓库的 Docker 镜像现在默认基于**当前源码仓库本身**构建，不再直接拉取上游官方 `wenyan` CLI。
 
-**Render Markdown to beautifully styled articles and publish to content platforms — powered by Docker.**
+## 构建镜像
 
-> This image bundles **wenyan CLI** and all required runtime dependencies.
-> No local Node.js or npm environment required.
-
-## Quick Start
-
-### Pull image
+在仓库根目录执行：
 
 ```bash
-docker pull caol64/wenyan-cli
+docker build -t gaozhou-cli:local .
 ```
 
-### Show help
+## 查看帮助
 
 ```bash
-docker run --rm caol64/wenyan-cli --help
+docker run --rm gaozhou-cli:local --help
 ```
 
-## Basic Usage
+## 渲染文章
 
-Render and publish a Markdown file to WeChat Official Account draft box:
+```bash
+docker run --rm \
+  -e HOST_FILE_PATH=$(pwd) \
+  -v $(pwd):/mnt/host-downloads \
+  gaozhou-cli:local \
+  render -f ./article.md -t paper-ink
+```
+
+## 发布文章
 
 ```bash
 docker run --rm \
   --env-file .env \
   -e HOST_FILE_PATH=$(pwd) \
   -v $(pwd):/mnt/host-downloads \
-  caol64/wenyan-cli \
-  publish -f ./article.md
+  gaozhou-cli:local \
+  publish -f ./article.md -t forest-notes
 ```
 
-Render Markdown content directly:
+## 常用说明
 
-```bash
-docker run --rm caol64/wenyan-cli \
-  render "# Hello Wenyan"
-```
+- 镜像入口会直接执行当前仓库编译后的 CLI
+- 主机路径通过 `HOST_FILE_PATH` 和 `/mnt/host-downloads` 做映射
+- Markdown 里的本地图片路径会按主机路径去解析
+- 容器里默认命令等价于直接运行 `gaozhou`
 
-## Working with Local Files (Recommended)
+## 环境变量
 
-When using local Markdown or image files, mount the current directory:
-
-```bash
-docker run --rm \
-  -e HOST_FILE_PATH=$(pwd) \
-  -v $(pwd):/mnt/host-downloads \
-  caol64/wenyan-cli \
-  publish -f ./example.md
-```
-
-**How it works:**
-
-| Path                  | Description                   |
-| --------------------- | ----------------------------- |
-| `HOST_FILE_PATH`      | Absolute path on host machine |
-| `/mnt/host-downloads` | Mounted path inside container |
-
-All file paths in Markdown (cover / images) should reference host paths.
-
-## Input Methods
-
-`publish` supports **exactly one** input source:
-
--   `-f <file>` — read Markdown from local file
--   `<input-content>` — inline Markdown string
--   `stdin` — pipe from another command
-
-Examples:
-
-```bash
-cat article.md | docker run --rm -i caol64/wenyan-cli render
-```
-
-```bash
-docker run --rm caol64/wenyan-cli render "# Title"
-```
-
-## Options
-
-Commonly used options:
-
--   `-t, --theme` — theme ID (default: `default`)
--   `-h, --highlight` — code highlight theme
--   `--no-mac-style` — disable macOS-style code blocks
--   `--no-footnote` — disable link-to-footnote conversion
-
-## Markdown Frontmatter (Required)
-
-Each Markdown file must include frontmatter:
-
-```md
----
-title: My Article Title
-cover: /absolute/path/to/cover.jpg
----
-```
-
--   `title` — article title (required)
--   `cover` — optional cover image (local or remote)
-
-## Environment Variables
-
-Publishing to WeChat requires:
-
--   `WECHAT_APP_ID`
--   `WECHAT_APP_SECRET`
-
-Recommended usage with `.env` file:
+发布到公众号时仍然需要：
 
 ```env
 WECHAT_APP_ID=xxx
 WECHAT_APP_SECRET=yyy
 ```
 
-## Image Details
-
--   Entrypoint: `wenyan`
--   Runtime: Node.js (bundled)
--   Architecture: `linux/amd64`, `linux/arm64`
-
-## Server Mode
-
-Deploy on a cloud server with fixed IP to solve WeChat API whitelist requirements:
+## Server 模式
 
 ```bash
-docker run -d --name wenyan-server \
+docker run -d --name gaozhou-server \
   -p 3000:3000 \
   --env-file .env \
-  caol64/wenyan-cli \
-  serve --port 3000
+  gaozhou-cli:local \
+  serve --port 3000 --api-key "my-secret-key"
 ```
 
-Then call the REST API from your local machine:
+健康检查：
 
 ```bash
-# Health check
-curl http://your-server-ip:3000/health
-
-# Render
-curl -X POST http://your-server-ip:3000/render \
-  -H "Content-Type: application/json" \
-  -d '{"content": "# Hello World", "theme": "default"}'
-
-# Publish
-curl -X POST http://your-server-ip:3000/publish \
-  -H "Content-Type: application/json" \
-  -d '{"file": "/mnt/host-downloads/article.md"}'
+curl http://localhost:3000/health
 ```
 
-> **Note:** Add your server's public IP to WeChat Official Account whitelist once, and it works permanently.
+## 便捷别名
 
-## License
-
-Apache License Version 2.0
-
-### Tip
-
-For frequent usage, create an alias:
+如果你经常用 Docker 方式调用，可以在本机 shell 里加一个别名：
 
 ```bash
-alias wenyan='docker run --rm \
+alias gaozhou='docker run --rm \
   -e HOST_FILE_PATH=$(pwd) \
   -v $(pwd):/mnt/host-downloads \
-  caol64/wenyan-cli'
+  gaozhou-cli:local'
 ```
 
-Then use it like a native CLI:
+之后就可以像本地命令一样使用：
 
 ```bash
-wenyan publish -f article.md
+gaozhou publish -f ./article.md
 ```

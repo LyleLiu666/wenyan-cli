@@ -8,6 +8,7 @@ import crypto from "node:crypto";
 import { configDir } from "@wenyan-md/core/wrapper";
 import multer from "multer";
 import { getNormalizeFilePath } from "../utils.js";
+import { BRAND_SERVER_DISPLAY_NAME, SERVICE_NAME } from "../brand.js";
 
 export interface ServeOptions {
     port?: number;
@@ -79,7 +80,7 @@ export async function serveCommand(options: ServeOptions) {
 
     // 健康检查
     app.get("/health", (_req: Request, res: Response) => {
-        res.json({ status: "ok", service: "wenyan-cli", version: options.version || "unknown" });
+        res.json({ status: "ok", service: SERVICE_NAME, version: options.version || "unknown" });
     });
 
     // 发布接口 - 读取 md 文件内容并发布
@@ -154,7 +155,7 @@ export async function serveCommand(options: ServeOptions) {
 
     return new Promise<void>((resolve, reject) => {
         const server = app.listen(port, () => {
-            console.log(`文颜 Server 已启动，监听端口 ${port}`);
+            console.log(`${BRAND_SERVER_DISPLAY_NAME} 已启动，监听端口 ${port}`);
             console.log(`健康检查：http://localhost:${port}/health`);
             console.log(`发布接口：POST http://localhost:${port}/publish`);
             console.log(`上传接口：POST http://localhost:${port}/upload`);

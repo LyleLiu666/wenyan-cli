@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { prepareRenderContext } from "../src/commands/render";
+import { prepareRenderContext, renderContent } from "../src/commands/render";
 import fs from "node:fs/promises";
+import { renderStyledContent } from "@wenyan-md/core/wrapper";
 
 // 1. Mock 外部模块
 vi.mock("node:fs/promises");
 vi.mock("@wenyan-md/core/wrapper", () => ({
     configStore: {
-        getThemeById: vi.fn().mockResolvedValue("body { color: black; }"),
+        getThemeById: vi.fn().mockResolvedValue(undefined),
     },
     renderStyledContent: vi.fn().mockImplementation(async (content: string) => {
         const title = content.replace(/^#\s*/, "");
@@ -89,5 +90,45 @@ describe("prepareRenderContext", () => {
         expect(fs.readFile).toHaveBeenCalledWith(`${process.cwd()}/my-theme.css`, "utf-8");
         // 假设 StyledContent 结构中 content 包含渲染后的 HTML，这里检查它是否处理了样式
         expect(gzhContent.content).toContain("<span>Content</span></h1>");
+    });
+
+    it("should resolve project-owned bundled theme css before rendering", async () => {
+        const input = "# Bundled";
+
+        await renderContent(input, {
+            ...defaultOptions,
+            theme: "paper-ink",
+        } as any);
+
+        expect(renderStyledContent).toHaveBeenCalledWith(
+            input,
+            expect.objectContaining({
+                themeId: "paper-ink",
+                themeCss: expect.stringContaining("#wenyan"),
+            }),
+        );
+    });
+
+    it("should prefer persisted custom theme css over bundled project theme css for legacy collisions", async () => {
+        const input = "# Legacy";
+
+        vi.mocked(fs.readFile).mockReset();
+        vi.mocked(renderStyledContent).mockClear();
+        vi.mocked((await import("@wenyan-md/core/wrapper")).configStore.getThemeById).mockResolvedValueOnce(
+            ".legacy-custom { color: blue; }",
+        );
+
+        await renderContent(input, {
+            ...defaultOptions,
+            theme: "paper-ink",
+        } as any);
+
+        expect(renderStyledContent).toHaveBeenCalledWith(
+            input,
+            expect.objectContaining({
+                themeId: "paper-ink",
+                themeCss: ".legacy-custom { color: blue; }",
+            }),
+        );
     });
 });

@@ -1,16 +1,17 @@
 import { Command } from "commander";
-import { publishCommand } from "./commands/publish.js";
-import { renderCommand } from "./commands/render.js";
 import pkg from "../package.json" with { type: "json" };
-import { themeCommand } from "./commands/theme.js";
 import { AppError, PublishOptions, RenderOptions } from "./types.js";
+import { CLI_DESCRIPTION, CLI_NAME } from "./brand.js";
+import { configureRuntimeNamespace } from "./runtime-namespace.js";
+
+configureRuntimeNamespace();
 
 export function createProgram(version: string = pkg.version): Command {
     const program = new Command();
 
     program
-        .name("wenyan")
-        .description("A CLI for WenYan Markdown Render.")
+        .name(CLI_NAME)
+        .description(CLI_DESCRIPTION)
         .version(version, "-v, --version", "output the current version")
         .action(() => {
             program.outputHelp();
@@ -47,6 +48,7 @@ export function createProgram(version: string = pkg.version): Command {
                     return { ...result, mode: "remote" };
                 } else {
                     // 走原有的本地直接发布模式
+                    const { publishCommand } = await import("./commands/publish.js");
                     const result = await publishCommand(inputContent, options);
                     return { ...result, mode: "local" };
                 }
@@ -57,6 +59,7 @@ export function createProgram(version: string = pkg.version): Command {
 
     addCommonOptions(renderCmd).action(async (inputContent: string | undefined, options: RenderOptions) => {
         await runCommandWrapper(async () => {
+            const { renderCommand } = await import("./commands/render.js");
             return await renderCommand(inputContent, options);
         });
     });
@@ -69,7 +72,10 @@ export function createProgram(version: string = pkg.version): Command {
         .option("--name <name>", "Name of the new custom theme")
         .option("--path <path>", "Path to the new custom theme CSS file")
         .option("--rm <name>", "Name of the custom theme to remove")
-        .action(themeCommand);
+        .action(async (options) => {
+            const { themeCommand } = await import("./commands/theme.js");
+            await themeCommand(options);
+        });
 
     program
         .command("broadcast")
