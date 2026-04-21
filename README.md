@@ -32,7 +32,9 @@
 
 ## 安装
 
-### 方式一：从仓库本地安装
+当前仓库**只提供源码编译使用方式**，不提供 npm 安装包，也不再维护 npm 发布流程；同时不再推荐通过 Git URL 直接全局安装。
+
+使用方式如下：
 
 ```bash
 git clone https://github.com/LyleLiu666/wenyan-cli.git
@@ -46,22 +48,6 @@ npm link
 
 ```bash
 gaozhou --help
-```
-
-### 方式二：直接从 Git 仓库安装
-
-```bash
-npm install -g git+https://github.com/LyleLiu666/wenyan-cli.git
-```
-
-### npm 包说明
-
-截至 2026-04-21，新的包名 `@lyleliu666/gaozhou-cli` 还没有发布到 npm。
-
-如果你想使用更接近上游官方体验的版本，请改用：
-
-```bash
-npm install -g @wenyan-md/cli
 ```
 
 ## 基本用法
