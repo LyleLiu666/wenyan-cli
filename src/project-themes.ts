@@ -134,6 +134,295 @@ function createThemeCss(palette: ThemePalette): string {
 `.trim();
 }
 
+interface StructuredThemeOptions {
+    paper: string;
+    panel: string;
+    text: string;
+    muted: string;
+    accent: string;
+    border: string;
+    codeBg: string;
+    quoteBg: string;
+}
+
+function createBriefThemeCss(options: StructuredThemeOptions): string {
+    return `
+#wenyan {
+    color: ${options.text};
+    background: ${options.paper};
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 28px 34px;
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.72;
+}
+
+#wenyan h1 {
+    margin: 0 0 2em;
+    padding: 0 0 0.7em;
+    border-top: 5px solid ${options.accent};
+    border-bottom: 1px solid ${options.border};
+    color: ${options.text};
+    font-size: 2em;
+    letter-spacing: 0.04em;
+}
+
+#wenyan h2 {
+    margin: 1.8em 0 0.8em;
+    padding: 0.35em 0.7em;
+    border-left: 5px solid ${options.accent};
+    background: ${options.panel};
+    color: ${options.text};
+    font-size: 1.25em;
+}
+
+#wenyan h2::before {
+    content: "§";
+    margin-right: 0.55em;
+    color: ${options.accent};
+    font-weight: 700;
+}
+
+#wenyan h3 {
+    margin: 1.3em 0 0.55em;
+    color: ${options.accent};
+    font-size: 1.05em;
+}
+
+#wenyan blockquote {
+    margin: 1.2em 0;
+    padding: 0.8em 1em;
+    border-left: 4px solid ${options.accent};
+    background: ${options.quoteBg};
+    color: ${options.muted};
+}
+
+#wenyan table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid ${options.border};
+    font-size: 0.94em;
+}
+
+#wenyan th,
+#wenyan td {
+    padding: 0.58em 0.7em;
+    border: 1px solid ${options.border};
+    text-align: left;
+}
+
+#wenyan th {
+    background: ${options.panel};
+    color: ${options.text};
+}
+
+#wenyan pre {
+    margin: 1.2em 0;
+    padding: 1em;
+    overflow-x: auto;
+    border: 1px solid ${options.border};
+    border-radius: 4px;
+    background: ${options.codeBg};
+}
+
+#wenyan a {
+    color: ${options.accent};
+    text-decoration: none;
+    border-bottom: 1px solid ${options.accent};
+}
+`.trim();
+}
+
+function createTechnicalThemeCss(options: StructuredThemeOptions): string {
+    return `
+#wenyan {
+    color: ${options.text};
+    background: ${options.paper};
+    padding: 30px;
+    font-family: "SFMono-Regular", "Roboto Mono", "Menlo", monospace;
+    line-height: 1.75;
+}
+
+#wenyan h1 {
+    margin: 0 0 2em;
+    padding: 0.8em 1em;
+    border: 1px solid ${options.border};
+    border-radius: 6px;
+    background: ${options.panel};
+    color: ${options.accent};
+    font-size: 1.65em;
+}
+
+#wenyan h1::before {
+    content: ">_";
+    margin-right: 0.65em;
+    color: ${options.accent};
+}
+
+#wenyan h2 {
+    margin: 1.8em 0 0.8em;
+    padding-left: 0.8em;
+    border-left: 3px solid ${options.accent};
+    color: ${options.text};
+    font-size: 1.2em;
+}
+
+#wenyan h2::before {
+    content: "//";
+    margin-right: 0.55em;
+    color: ${options.accent};
+}
+
+#wenyan h3 {
+    color: ${options.accent};
+    font-size: 1em;
+}
+
+#wenyan blockquote {
+    margin: 1.2em 0;
+    padding: 0.9em 1em;
+    border: 1px dashed ${options.accent};
+    background: ${options.quoteBg};
+    color: ${options.muted};
+}
+
+#wenyan pre {
+    margin: 1.2em 0;
+    padding: 1.1em;
+    overflow-x: auto;
+    border: 1px solid ${options.border};
+    border-radius: 6px;
+    background: ${options.codeBg};
+    box-shadow: inset 4px 0 0 ${options.accent};
+}
+
+#wenyan pre::before {
+    content: "code";
+    display: block;
+    margin: -0.55em 0 0.65em;
+    color: ${options.muted};
+    font-size: 0.75em;
+}
+
+#wenyan table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid ${options.border};
+}
+
+#wenyan th,
+#wenyan td {
+    padding: 0.55em 0.7em;
+    border: 1px solid ${options.border};
+}
+
+#wenyan th {
+    background: ${options.panel};
+    color: ${options.accent};
+}
+
+#wenyan code {
+    color: ${options.accent};
+}
+`.trim();
+}
+
+function createEditorialThemeCss(options: StructuredThemeOptions): string {
+    return `
+#wenyan {
+    color: ${options.text};
+    background: ${options.paper};
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 22px 36px;
+    font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+    line-height: 2;
+    letter-spacing: 0.025em;
+}
+
+#wenyan h1 {
+    margin: 0 0 2.2em;
+    padding: 0.5em 0;
+    border-top: 1px solid ${options.accent};
+    border-bottom: 1px solid ${options.accent};
+    color: ${options.text};
+    text-align: center;
+    font-size: 2em;
+    letter-spacing: 0.12em;
+}
+
+#wenyan h2 {
+    margin: 2em 0 0.9em;
+    color: ${options.accent};
+    text-align: center;
+    font-size: 1.35em;
+    letter-spacing: 0.08em;
+}
+
+#wenyan h2::before,
+#wenyan h2::after {
+    content: "—";
+    margin: 0 0.65em;
+    color: ${options.border};
+}
+
+#wenyan h3 {
+    margin: 1.5em 0 0.6em;
+    color: ${options.accent};
+    font-size: 1.08em;
+}
+
+#wenyan blockquote {
+    margin: 1.5em 0;
+    padding: 1em 1.4em;
+    border-top: 1px solid ${options.border};
+    border-bottom: 1px solid ${options.border};
+    background: ${options.quoteBg};
+    color: ${options.muted};
+    text-align: center;
+}
+
+#wenyan blockquote::before {
+    content: "“";
+    display: block;
+    color: ${options.accent};
+    font-size: 2em;
+    line-height: 0.6;
+}
+
+#wenyan img {
+    border-radius: 0;
+    box-shadow: 0 8px 18px rgba(60, 40, 25, 0.12);
+}
+
+#wenyan table {
+    width: 100%;
+    border-collapse: collapse;
+    border-top: 2px solid ${options.accent};
+    border-bottom: 2px solid ${options.accent};
+}
+
+#wenyan th,
+#wenyan td {
+    padding: 0.65em 0.75em;
+    border-bottom: 1px solid ${options.border};
+}
+
+#wenyan th {
+    color: ${options.accent};
+    font-weight: 700;
+}
+
+#wenyan pre {
+    padding: 1em;
+    border: 1px solid ${options.border};
+    background: ${options.codeBg};
+    font-family: "SFMono-Regular", "Roboto Mono", monospace;
+    text-align: left;
+}
+`.trim();
+}
+
 const projectThemes: ProjectTheme[] = [
     {
         id: "paper-ink",
@@ -457,6 +746,96 @@ const projectThemes: ProjectTheme[] = [
             quoteBg: "#eef0fb",
             tableHeadBg: "#dee3f7",
             tableStripeBg: "#f8f9fd",
+        }),
+    },
+    {
+        id: "executive-brief",
+        name: "Executive Brief",
+        description: "A compact decision-brief layout for status updates, proposals, and executive summaries.",
+        css: createBriefThemeCss({
+            paper: "#ffffff",
+            panel: "#eef4fb",
+            text: "#203247",
+            muted: "#52677d",
+            accent: "#1769aa",
+            border: "#c8d8e8",
+            codeBg: "#f3f7fb",
+            quoteBg: "#f0f6fc",
+        }),
+    },
+    {
+        id: "metrics-brief",
+        name: "Metrics Brief",
+        description: "A dense, high-signal layout for metrics, operating reviews, and data-heavy notes.",
+        css: createBriefThemeCss({
+            paper: "#fbfcfe",
+            panel: "#f5efe2",
+            text: "#2d3440",
+            muted: "#6d6f73",
+            accent: "#b45f06",
+            border: "#dfd1b7",
+            codeBg: "#f3f1ec",
+            quoteBg: "#fff8ea",
+        }),
+    },
+    {
+        id: "terminal-brief",
+        name: "Terminal Brief",
+        description: "A dark terminal-inspired layout for release notes, runbooks, and engineering updates.",
+        css: createTechnicalThemeCss({
+            paper: "#0b1220",
+            panel: "#111c2e",
+            text: "#d9e4f2",
+            muted: "#8da3bc",
+            accent: "#61dafb",
+            border: "#28415e",
+            codeBg: "#07101c",
+            quoteBg: "#101d30",
+        }),
+    },
+    {
+        id: "research-notebook",
+        name: "Research Notebook",
+        description: "A structured technical notebook for experiments, architecture notes, and long-form analysis.",
+        css: createTechnicalThemeCss({
+            paper: "#f5f7f9",
+            panel: "#e8edf2",
+            text: "#253746",
+            muted: "#607383",
+            accent: "#2f718d",
+            border: "#c9d6df",
+            codeBg: "#eaf1f5",
+            quoteBg: "#edf5f7",
+        }),
+    },
+    {
+        id: "literary-margin",
+        name: "Literary Margin",
+        description: "A spacious serif layout for essays, cultural writing, and reflective long-form pieces.",
+        css: createEditorialThemeCss({
+            paper: "#fffdf9",
+            panel: "#f7f0e5",
+            text: "#3d3029",
+            muted: "#756458",
+            accent: "#9a4f36",
+            border: "#dfcdbd",
+            codeBg: "#f6efe6",
+            quoteBg: "#fbf5ed",
+        }),
+    },
+    {
+        id: "newspaper-column",
+        name: "Newspaper Column",
+        description: "A restrained editorial layout with column-like rules for commentary and weekly notes.",
+        css: createEditorialThemeCss({
+            paper: "#fdfdfb",
+            panel: "#f0f0eb",
+            text: "#262626",
+            muted: "#5e5e5a",
+            accent: "#303030",
+            border: "#bdbdb6",
+            codeBg: "#f1f1ed",
+            quoteBg: "#f7f7f2",
         }),
     },
 ];
