@@ -43,7 +43,7 @@
     "test:cli": "vitest run tests/cli.test.ts",
     "test:render": "vitest run tests/render.test.ts",
     "test:publish": "vitest run tests/publish.test.ts",
-    "test:theme": "vitest run tests/project-themes.test.ts tests/theme.test.ts tests/theme-registry.test.ts tests/theme-compatibility.test.ts tests/theme-gallery.test.ts",
+    "test:theme": "vitest run tests/project-themes.test.ts tests/theme.test.ts tests/theme-registry.test.ts tests/theme-authoring.test.ts tests/theme-compatibility.test.ts tests/theme-gallery.test.ts",
     "theme:gallery": "pnpm tsx scripts/theme-gallery.ts",
     "test:realPublish": "pnpm build && pnpm dotenv -e .env.test -- node ./dist/cli.js publish -f tests/publish.md -c tests/manhua.css --no-mac-style",
     "test:serverPublish": "pnpm build && node ./dist/cli.js publish -f tests/publish.md -c tests/manhua.css --no-mac-style --server http://localhost:3000"

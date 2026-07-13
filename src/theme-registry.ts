@@ -134,8 +134,8 @@ export async function resolveTheme(themeId: string): Promise<ResolvedTheme | und
     const customCss = await configStore.getThemeById(themeId);
     if (customCss) {
         const shadowedOrigins: ThemeOrigin[] = [];
-        if (isProjectTheme(themeId)) shadowedOrigins.push("project");
         if (isCoreTheme(themeId)) shadowedOrigins.push("core");
+        if (isProjectTheme(themeId)) shadowedOrigins.push("project");
         return {
             descriptor: {
                 id: themeId,

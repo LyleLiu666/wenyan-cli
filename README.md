@@ -114,7 +114,7 @@ gaozhou theme -l
 
 ### 稿舟自带扩展主题
 
-除了 core 自带主题之外，当前仓库额外提供了这些主题（目前共 18 个扩展主题）：
+除了 core 自带主题之外，当前仓库额外提供了这些主题（目前共 24 个扩展主题）：
 
 - `paper-ink`
 - `forest-notes`
@@ -134,13 +134,47 @@ gaozhou theme -l
 - `steel-column`
 - `peach-study`
 - `starlight-ledger`
+- `executive-brief`
+- `metrics-brief`
+- `terminal-brief`
+- `research-notebook`
+- `literary-margin`
+- `newspaper-column`
 
 这些主题开箱即用，不需要额外下载。
+
+开发主题时可以生成一份包含所有内置主题的 HTML 画廊并做语义检查：
+
+```bash
+pnpm theme:gallery ./output/theme-gallery
+```
 
 ### 添加自定义主题
 
 ```bash
 gaozhou theme --add --name my-theme --path ./my-theme.css
+```
+
+主题 ID 只能使用小写字母、数字、下划线和连字符。CSS 必须包含 `#wenyan` 选择器，安装前会检查大小、引号、注释和大括号。
+
+也可以用目录形式组织主题：目录中放置 `theme.css`，并可选提供 `theme.json`：
+
+```json
+{
+  "id": "my-theme",
+  "name": "My Theme",
+  "description": "A short description",
+  "css": "theme.css"
+}
+```
+
+检查、查看和脚本化管理：
+
+```bash
+gaozhou theme check ./my-theme.css --json
+gaozhou theme show paper-ink --json
+gaozhou theme list --json
+gaozhou theme remove my-theme --json
 ```
 
 也支持从远程 CSS 安装：
@@ -156,6 +190,8 @@ gaozhou theme --rm my-theme
 ```
 
 > `core` 内置主题和 `稿舟` 扩展主题都属于受保护主题，不能删除。
+
+同名的历史自定义主题仍然优先于 core 和稿舟扩展主题；删除后会回退到下层主题。主题安装使用临时文件和原子配置指针，更新中断时不会留下半个 CSS 配置。
 
 ## 输入规则
 

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createProgram } from "../src/index.js";
 import { publishCommand } from "../src/commands/publish.js";
 import { renderCommand } from "../src/commands/render.js";
+import { themeCommand } from "../src/commands/theme.js";
 
 vi.mock("../src/commands/publish.js", () => ({
     publishCommand: vi.fn().mockResolvedValue({
@@ -16,6 +17,15 @@ vi.mock("../src/commands/render.js", () => ({
         ok: true,
         command: "render",
         html: "<h1>Hello</h1>",
+    }),
+}));
+
+vi.mock("../src/commands/theme.js", () => ({
+    themeCommand: vi.fn().mockResolvedValue({
+        ok: true,
+        command: "theme",
+        action: "show",
+        theme: { id: "paper-ink" },
     }),
 }));
 
@@ -104,5 +114,18 @@ describe("CLI Argument Parsing", () => {
         // 默认 action 会调用 outputHelp，通常会写到 stdout
         expect(outputSpy).toHaveBeenCalled();
         outputSpy.mockRestore();
+    });
+
+    it("should support positional theme actions and JSON output", async () => {
+        const args = ["node", "gaozhou", "theme", "show", "paper-ink", "--json"];
+        const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+
+        await program.parseAsync(args);
+
+        expect(themeCommand).toHaveBeenCalledWith(
+            expect.objectContaining({ action: "show", value: "paper-ink", json: true }),
+        );
+        expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('"command":"theme"'));
+        stdoutSpy.mockRestore();
     });
 });

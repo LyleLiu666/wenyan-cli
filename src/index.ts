@@ -67,14 +67,23 @@ export function createProgram(version: string = pkg.version): Command {
     program
         .command("theme")
         .description("Manage themes")
+        .argument("[action]", "list, show, add, remove, or check")
+        .argument("[value]", "theme ID or source path for the selected action")
         .option("-l, --list", "List all available themes")
+        .option("--show <name>", "Show one theme")
         .option("--add", "Add a new custom theme")
         .option("--name <name>", "Name of the new custom theme")
+        .option("--description <description>", "Description for a custom theme")
         .option("--path <path>", "Path to the new custom theme CSS file")
         .option("--rm <name>", "Name of the custom theme to remove")
-        .action(async (options) => {
-            const { themeCommand } = await import("./commands/theme.js");
-            await themeCommand(options);
+        .option("--remove <name>", "Alias for --rm")
+        .option("--check <path>", "Validate a custom theme CSS file, directory, or URL")
+        .option("--json", "Print a machine-readable JSON result")
+        .action(async (action: string | undefined, value: string | undefined, options) => {
+            await runCommandWrapper(async () => {
+                const { themeCommand } = await import("./commands/theme.js");
+                return await themeCommand({ ...options, action, value });
+            }, options.json === true);
         });
 
     program
@@ -108,10 +117,12 @@ export function createProgram(version: string = pkg.version): Command {
 }
 
 // --- 统一的错误处理包装器 ---
-async function runCommandWrapper(action: () => Promise<unknown>) {
+export async function runCommandWrapper(action: () => Promise<unknown>, printResult = true) {
     try {
         const result = await action();
-        process.stdout.write(`${JSON.stringify(result)}\n`);
+        if (printResult) {
+            process.stdout.write(`${JSON.stringify(result)}\n`);
+        }
     } catch (error) {
         if (error instanceof AppError) {
             process.stdout.write(
