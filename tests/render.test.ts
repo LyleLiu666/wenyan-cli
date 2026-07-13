@@ -131,4 +131,14 @@ describe("prepareRenderContext", () => {
             }),
         );
     });
+
+    it("should reject an unknown registered theme before rendering", async () => {
+        await expect(
+            renderContent("# Missing", {
+                ...defaultOptions,
+                theme: "does-not-exist",
+            } as any),
+        ).rejects.toMatchObject({ code: "THEME_NOT_FOUND" });
+        expect(renderStyledContent).not.toHaveBeenCalled();
+    });
 });

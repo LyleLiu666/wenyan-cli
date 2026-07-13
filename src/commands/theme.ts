@@ -1,8 +1,7 @@
-import { getAllGzhThemes } from "@wenyan-md/core";
 import { getNormalizeFilePath } from "../utils.js";
 import fs from "node:fs/promises";
 import { configStore } from "@wenyan-md/core/wrapper";
-import { getProjectThemeById, listProjectThemes } from "../project-themes.js";
+import { isCoreTheme, isProjectTheme, listThemeDescriptors, ThemeDescriptor } from "../theme-registry.js";
 
 interface ThemeOptions {
     list?: boolean;
@@ -29,24 +28,31 @@ export async function themeCommand(options: ThemeOptions) {
 }
 
 async function listThemes() {
-    const themes = getAllGzhThemes();
-    const projectThemes = listProjectThemes();
-    const customThemes = await configStore.getThemes();
+    const themes = await listThemeDescriptors();
 
     console.log("\n内置主题（core）：");
-    themes.forEach((theme) => console.log(`- ${theme.meta.id}: ${theme.meta.description}`));
+    themes
+        .filter((theme) => theme.origin === "core")
+        .forEach((theme) => console.log(formatTheme(theme)));
 
     console.log("\n扩展主题（稿舟）：");
-    projectThemes.forEach((theme) => console.log(`- ${theme.id}: ${theme.description}`));
+    themes
+        .filter((theme) => theme.origin === "project")
+        .forEach((theme) => console.log(formatTheme(theme)));
 
+    const customThemes = themes.filter((theme) => theme.origin === "custom");
     if (customThemes.length > 0) {
         console.log("\n自定义主题：");
-        customThemes.forEach((theme) => {
-            const suffix = checkProjectThemeExists(theme.id) ? " [与扩展主题同名，渲染时优先使用自定义主题]" : "";
-            console.log(`- ${theme.id}: ${theme.description ?? ""}${suffix}`);
-        });
+        customThemes.forEach((theme) => console.log(formatTheme(theme)));
     }
     console.log("");
+}
+
+function formatTheme(theme: ThemeDescriptor): string {
+    const shadowed = theme.shadowedOrigins?.length
+        ? ` [当前优先级高于：${theme.shadowedOrigins.join("、")}，渲染时使用此主题]`
+        : "";
+    return `- ${theme.id}: ${theme.description}${shadowed}`;
 }
 
 async function addTheme(name?: string, path?: string) {
@@ -100,12 +106,11 @@ async function removeTheme(name: string) {
 }
 
 function checkBuiltinThemeExists(themeId: string): boolean {
-    const themes = getAllGzhThemes();
-    return themes.some((theme) => theme.meta.id === themeId);
+    return isCoreTheme(themeId);
 }
 
 function checkProjectThemeExists(themeId: string): boolean {
-    return Boolean(getProjectThemeById(themeId));
+    return isProjectTheme(themeId);
 }
 
 async function checkCustomThemeExists(themeId: string): Promise<boolean> {

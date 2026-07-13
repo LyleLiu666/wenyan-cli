@@ -1,9 +1,9 @@
 import { createWenyanCore } from "@wenyan-md/core";
-import { configStore, renderStyledContent, StyledContent } from "@wenyan-md/core/wrapper";
+import { renderStyledContent, StyledContent } from "@wenyan-md/core/wrapper";
 import { getInputContent, getNormalizeFilePath } from "../utils.js";
 import fs from "node:fs/promises";
 import { AppError, RenderOptions } from "../types.js";
-import { getProjectThemeById } from "../project-themes.js";
+import { resolveTheme } from "../theme-registry.js";
 
 interface RenderContext {
     gzhContent: StyledContent;
@@ -18,34 +18,25 @@ async function getParserCore() {
     return parserCorePromise;
 }
 
-async function resolveRegisteredThemeCss(themeId?: string): Promise<string | undefined> {
-    if (!themeId) {
-        return undefined;
-    }
-
-    // 历史上用户保存过的自定义主题需要优先于新增的项目内置主题，
-    // 否则升级后会出现“同名主题被静默替换”的行为漂移。
-    const customThemeCss = await configStore.getThemeById(themeId);
-    if (customThemeCss) {
-        return customThemeCss;
-    }
-
-    return getProjectThemeById(themeId)?.css;
-}
-
 export async function renderContent(content: string, options: RenderOptions): Promise<StyledContent> {
     const { theme, customTheme, highlight, macStyle, footnote } = options;
 
     let handledCustomTheme: string | undefined = customTheme;
+    let resolvedTheme;
     if (customTheme) {
         const normalizePath = getNormalizeFilePath(customTheme);
         handledCustomTheme = await fs.readFile(normalizePath, "utf-8");
     } else {
-        handledCustomTheme = await resolveRegisteredThemeCss(theme);
+        resolvedTheme = theme ? await resolveTheme(theme) : undefined;
+        handledCustomTheme = resolvedTheme?.css;
     }
 
     if (!handledCustomTheme && !theme) {
-        throw new AppError(`theme "${theme}" not found.`);
+        throw new AppError(`theme "${theme}" not found.`, "THEME_NOT_FOUND", { theme }, 3);
+    }
+
+    if (!handledCustomTheme && theme && !resolvedTheme) {
+        throw new AppError(`theme "${theme}" not found.`, "THEME_NOT_FOUND", { theme }, 3);
     }
 
     // v3 core 将 frontmatter 解析与样式渲染拆成两步；保留此前 CLI 对标题、封面等
