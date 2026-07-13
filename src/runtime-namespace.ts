@@ -15,7 +15,11 @@ export function getRuntimeStateRoot(appData = process.env.APPDATA, homeDir = os.
 }
 
 export function configureRuntimeNamespace(homeDir?: string): string {
-    const runtimeStateRoot = getRuntimeStateRoot(process.env.APPDATA, homeDir);
+    // core v3 在 Unix 上优先使用 XDG_CONFIG_HOME；只设置 APPDATA 会让
+    // gaozhou 与 wenyan-md 重新共享配置和上传缓存。
+    const configuredRoot = process.env.APPDATA || process.env.XDG_CONFIG_HOME;
+    const runtimeStateRoot = getRuntimeStateRoot(configuredRoot, homeDir);
     process.env.APPDATA = runtimeStateRoot;
+    process.env.XDG_CONFIG_HOME = runtimeStateRoot;
     return runtimeStateRoot;
 }

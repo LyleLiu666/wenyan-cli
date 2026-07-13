@@ -1,3 +1,4 @@
+import { createWenyanCore } from "@wenyan-md/core";
 import { configStore, renderStyledContent, StyledContent } from "@wenyan-md/core/wrapper";
 import { getInputContent, getNormalizeFilePath } from "../utils.js";
 import fs from "node:fs/promises";
@@ -8,6 +9,13 @@ interface RenderContext {
     gzhContent: StyledContent;
     absoluteDirPath: string | undefined;
     inputSource: "argument" | "file" | "stdin";
+}
+
+let parserCorePromise: ReturnType<typeof createWenyanCore> | undefined;
+
+async function getParserCore() {
+    parserCorePromise ??= createWenyanCore();
+    return parserCorePromise;
 }
 
 async function resolveRegisteredThemeCss(themeId?: string): Promise<string | undefined> {
@@ -40,8 +48,10 @@ export async function renderContent(content: string, options: RenderOptions): Pr
         throw new AppError(`theme "${theme}" not found.`);
     }
 
-    // 5. 执行核心渲染
-    const gzhContent = await renderStyledContent(content, {
+    // v3 core 将 frontmatter 解析与样式渲染拆成两步；保留此前 CLI 对标题、封面等
+    // 发布元数据的读取方式，同时让主题 CSS 继续由本项目解析。
+    const parsedContent = await (await getParserCore()).handleFrontMatter(content);
+    const renderedContent = await renderStyledContent(parsedContent.content, {
         themeId: theme,
         hlThemeId: highlight,
         isMacStyle: macStyle,
@@ -49,7 +59,12 @@ export async function renderContent(content: string, options: RenderOptions): Pr
         themeCss: handledCustomTheme,
     });
 
-    return gzhContent;
+    // 测试替身以及旧版 core 可能直接返回 StyledContent；v3 返回渲染后的 HTML 字符串。
+    if (typeof renderedContent === "string") {
+        return { ...parsedContent, content: renderedContent };
+    }
+
+    return renderedContent;
 }
 
 // --- 处理输入源、文件路径和主题 ---

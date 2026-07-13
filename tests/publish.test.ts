@@ -1,12 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { publishCommand } from "../src/commands/publish";
-import { publishToWechatDraft } from "@wenyan-md/core/publish";
+import { publishToWechatDraft } from "@wenyan-md/core/wrapper";
 import { prepareRenderContext } from "../src/commands/render";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
 
 // 1. Mock 依赖模块
-vi.mock("@wenyan-md/core/publish");
+vi.mock("@wenyan-md/core/wrapper", async () => {
+    const actual = await vi.importActual<typeof import("@wenyan-md/core/wrapper")>("@wenyan-md/core/wrapper");
+    return {
+        ...actual,
+        publishToWechatDraft: vi.fn(),
+    };
+});
 vi.mock("../src/commands/render"); // 关键：Mock 内部的 render 准备逻辑
 
 const md = readFileSync(join(process.cwd(), "tests/publish.md"), "utf8");
@@ -22,6 +28,7 @@ describe("publishCommand", () => {
     });
 
     afterEach(() => {
+        delete process.env.WECHAT_PUBLISH_TIMEOUT_MS;
         vi.restoreAllMocks();
     });
 
@@ -111,7 +118,7 @@ describe("publishCommand", () => {
 
     it("should throw error when WeChat API fails to return media_id", async () => {
         vi.mocked(prepareRenderContext).mockResolvedValue({
-            gzhContent: { title: "标题", cover: "封面", content: "<p>内容</p>" } as any,
+            gzhContent: { title: "标题", cover: "https://example.com/cover.jpg", content: "<p>内容</p>" } as any,
             absoluteDirPath: undefined,
             inputSource: "argument",
         });
@@ -147,5 +154,85 @@ describe("publishCommand", () => {
             image_count: 1,
         });
         expect(publishToWechatDraft).not.toHaveBeenCalled();
+    });
+
+    it("should reject a missing local image before contacting WeChat", async () => {
+        vi.mocked(prepareRenderContext).mockResolvedValue({
+            gzhContent: {
+                title: "预检标题",
+                cover: "",
+                content: '<p><img src="missing-cover.png" /></p>',
+            } as any,
+            absoluteDirPath: "/tmp/gaozhou-missing-image",
+            inputSource: "file",
+        });
+
+        await expect(publishCommand(md, { ...defaultOptions, preflight: true } as any)).rejects.toMatchObject({
+            code: "MISSING_IMAGE",
+        });
+        expect(publishToWechatDraft).not.toHaveBeenCalled();
+    });
+
+    it("should report data URI images as an explicit unsupported input", async () => {
+        vi.mocked(prepareRenderContext).mockResolvedValue({
+            gzhContent: {
+                title: "预检标题",
+                cover: "data:image/png;base64,AAAA",
+                content: "<p>正文</p>",
+            } as any,
+            absoluteDirPath: undefined,
+            inputSource: "argument",
+        });
+
+        await expect(publishCommand(md, { ...defaultOptions, preflight: true } as any)).rejects.toMatchObject({
+            code: "UNSUPPORTED_IMAGE",
+        });
+    });
+
+    it("should reject titles longer than the WeChat draft limit", async () => {
+        vi.mocked(prepareRenderContext).mockResolvedValue({
+            gzhContent: {
+                title: "一".repeat(33),
+                cover: "https://example.com/cover.jpg",
+                content: "<p>正文</p>",
+            } as any,
+            absoluteDirPath: undefined,
+            inputSource: "argument",
+        });
+
+        await expect(publishCommand(md, { ...defaultOptions, preflight: true } as any)).rejects.toMatchObject({
+            code: "INVALID_METADATA",
+        });
+    });
+
+    it("should classify numeric credential errors as authentication failures", async () => {
+        vi.mocked(prepareRenderContext).mockResolvedValue({
+            gzhContent: {
+                title: "有标题",
+                cover: "https://example.com/cover.jpg",
+                content: "<p>正文</p>",
+            } as any,
+            absoluteDirPath: undefined,
+            inputSource: "argument",
+        });
+        vi.mocked(publishToWechatDraft).mockRejectedValue(new Error("40013: invalid appid"));
+
+        await expect(publishCommand(md, defaultOptions as any)).rejects.toMatchObject({ code: "AUTH_ERROR" });
+    });
+
+    it("should fail with a stable timeout error when the WeChat request hangs", async () => {
+        vi.mocked(prepareRenderContext).mockResolvedValue({
+            gzhContent: {
+                title: "有标题",
+                cover: "https://example.com/cover.jpg",
+                content: "<p>正文</p>",
+            } as any,
+            absoluteDirPath: undefined,
+            inputSource: "argument",
+        });
+        process.env.WECHAT_PUBLISH_TIMEOUT_MS = "10";
+        vi.mocked(publishToWechatDraft).mockReturnValue(new Promise(() => {}) as any);
+
+        await expect(publishCommand(md, defaultOptions as any)).rejects.toMatchObject({ code: "NETWORK_TIMEOUT" });
     });
 });

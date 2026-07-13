@@ -4,10 +4,12 @@ import path from "node:path";
 
 describe("runtime namespace isolation", () => {
     const originalAppData = process.env.APPDATA;
+    const originalXdgConfigHome = process.env.XDG_CONFIG_HOME;
 
     beforeEach(() => {
         vi.resetModules();
         delete process.env.APPDATA;
+        delete process.env.XDG_CONFIG_HOME;
     });
 
     afterEach(() => {
@@ -15,6 +17,11 @@ describe("runtime namespace isolation", () => {
             delete process.env.APPDATA;
         } else {
             process.env.APPDATA = originalAppData;
+        }
+        if (originalXdgConfigHome === undefined) {
+            delete process.env.XDG_CONFIG_HOME;
+        } else {
+            process.env.XDG_CONFIG_HOME = originalXdgConfigHome;
         }
     });
 
@@ -39,6 +46,15 @@ describe("runtime namespace isolation", () => {
 
         expect(configDir).toBe(path.join("/tmp/home", ".config", "gaozhou-cli", "wenyan-md"));
         expect(configDir).not.toBe(path.join(os.homedir(), ".config", "wenyan-md"));
+    });
+
+    it("isolates core v3 when XDG_CONFIG_HOME is already configured", async () => {
+        process.env.XDG_CONFIG_HOME = "/tmp/shared-config";
+        const { configureRuntimeNamespace } = await import("../src/runtime-namespace.js");
+
+        configureRuntimeNamespace("/tmp/home");
+
+        expect(process.env.XDG_CONFIG_HOME).toBe(path.join("/tmp/shared-config", "gaozhou-cli"));
     });
 
     it("is idempotent and does not keep appending the namespace", async () => {
